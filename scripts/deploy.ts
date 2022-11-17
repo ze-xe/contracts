@@ -1,5 +1,5 @@
 import { Contract } from "ethers";
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 
 interface Deployments {
   system: Contract;
@@ -7,12 +7,13 @@ interface Deployments {
   exchange: Contract;
   lever: Contract;
   eth: Contract;
-  ethOracle: Contract;
+  ceth: Contract;
   btc: Contract;
-  btcOracle: Contract;
+  cbtc: Contract;
   usdc: Contract;
-  usdcOracle: Contract;
+  cusdc: Contract;
   irm: Contract;
+  oracle: Contract;
 }
 
 export async function deploy(logs = false): Promise<Deployments> {
@@ -48,7 +49,7 @@ export async function deploy(logs = false): Promise<Deployments> {
   /*                                    Lever                                   */
   /* -------------------------------------------------------------------------- */
   const Lever = await ethers.getContractFactory("Lever");
-  const lever = await Lever.deploy(system.address);
+  const lever = await Lever.deploy();
   await lever.deployed();
 
   if(logs) console.log("Lever deployed to:", lever.address);
@@ -58,40 +59,45 @@ export async function deploy(logs = false): Promise<Deployments> {
   /*                                    Tokens                                  */
   /* -------------------------------------------------------------------------- */
   const ERC20 = await ethers.getContractFactory("TestERC20");
-  const PriceOracle = await ethers.getContractFactory("PriceOracle");
-  const InterestRateModel = await ethers.getContractFactory("InterestRateModel");
+  const LendingMarket = await ethers.getContractFactory("LendingMarket");
+  const PriceOracle = await ethers.getContractFactory("SimplePriceOracle");
+  const InterestRateModel = await ethers.getContractFactory("JumpRateModelV2");
+  const irm = await InterestRateModel.deploy(inEth('0.05'), inEth('0.05'), inEth('0.05'), inEth('0.80'), '0x22F221b77Cd7770511421c8E0636940732016Dcd');
+  await irm.deployed();
+
+  const oracle = await PriceOracle.deploy();
+  await lever._setPriceOracle(oracle.address);
 
   const eth = await ERC20.deploy("ETH", "ETH");
   await eth.deployed();
-  const ethOracle = await PriceOracle.deploy(ethers.utils.parseEther('1000'));
-  await ethOracle.deployed();
-  if(logs) console.log("ETH deployed to:", eth.address);
+  const ceth = await LendingMarket.deploy(eth.address, lever.address, irm.address, inEth('0.1'), 'ETH', 'ETH', 18);
+  await ceth.deployed();
+  await oracle.setUnderlyingPrice(ceth.address, inEth('1124'));
+  await lever._supportMarket(ceth.address)
+  if(logs) console.log("ETH market deployed to:", ceth.address);
 
   const btc = await ERC20.deploy("BTC", "BTC");
   await btc.deployed();
-  const btcOracle = await PriceOracle.deploy(ethers.utils.parseEther('100000'));
-  await btcOracle.deployed();
-  if(logs) console.log("BTC deployed to:", btc.address);
+  const cbtc = await LendingMarket.deploy(btc.address, lever.address, irm.address, inEth('0.1'), 'BTC', 'BTC', 18);
+  await cbtc.deployed();
+  await oracle.setUnderlyingPrice(cbtc.address, inEth('16724'));
+  await lever._supportMarket(cbtc.address)
+  if(logs) console.log("BTC market deployed to:", cbtc.address);
 
   const usdc = await ERC20.deploy("USDC", "USDC");
   await usdc.deployed();
-  const usdcOracle = await PriceOracle.deploy(ethers.utils.parseEther('1'));
-  await usdcOracle.deployed();
-  if(logs) console.log("USDC deployed to:", usdc.address);
-
-  const irm = await InterestRateModel.deploy(ethers.utils.parseEther('0.05'), ethers.utils.parseEther('0.05'));
+  const cusdc = await LendingMarket.deploy(usdc.address, lever.address, irm.address, inEth('0.1'), 'USDC', 'USDC', 18);
+  await cusdc.deployed();
+  await oracle.setUnderlyingPrice(cusdc.address, inEth('1.001'));
+  await lever._supportMarket(cusdc.address)
+  if(logs) console.log("USDC market deployed to:", cusdc.address);
   
   await exchange.updateMinToken0Amount(eth.address, usdc.address, ethers.utils.parseEther('0.001'))
   await exchange.updateMinToken0Amount(btc.address, usdc.address, ethers.utils.parseEther('0.0001'))
   await exchange.updateExchangeRateDecimals(eth.address, usdc.address, '2')
   await exchange.updateExchangeRateDecimals(btc.address, usdc.address, '2')
 
-  await lever.createMarket(eth.address, ethers.utils.parseEther('1.3'), ethers.utils.parseEther('2'), irm.address, ethOracle.address, ethers.utils.parseEther('10000'), ethers.utils.parseEther('1000'));
-  await lever.listMarket(eth.address);
-  await lever.createMarket(btc.address, ethers.utils.parseEther('1.5'), ethers.utils.parseEther('2'), irm.address, btcOracle.address, ethers.utils.parseEther('1000'), ethers.utils.parseEther('1000'));
-  await lever.listMarket(btc.address);
-  await lever.createMarket(usdc.address, ethers.utils.parseEther('1.5'), ethers.utils.parseEther('2'), irm.address, usdcOracle.address, ethers.utils.parseEther('100000000'), ethers.utils.parseEther('10000000'));
-  await lever.listMarket(usdc.address);
-
-  return { system, vault, exchange, lever, usdc, btc, eth, usdcOracle, btcOracle, ethOracle, irm };
+  return { system, vault, exchange, lever, usdc, cusdc, btc, cbtc, eth, ceth, oracle, irm };
 }
+
+const inEth = (amount: string) => ethers.utils.parseEther(amount);

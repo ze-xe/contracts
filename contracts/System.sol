@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import './Vault.sol';
 import './Exchange.sol';
-import './Lever.sol';
+import './lending/Lever.sol';
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 
