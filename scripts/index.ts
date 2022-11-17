@@ -1,7 +1,7 @@
 import { deploy } from "./deploy";
 
 async function main() {
-  await deploy();
+  await deploy(true);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

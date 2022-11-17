@@ -3,26 +3,24 @@ pragma solidity 0.8.17;
 
 import './Vault.sol';
 import './Exchange.sol';
+import './Lever.sol';
 
-contract System {
-    address public admin;
+import '@openzeppelin/contracts/access/Ownable.sol';
+
+contract System is Ownable {
     Exchange public exchange;
     Vault public vault;
+    Lever public lever;
 
-    constructor() {
-        admin = msg.sender;
-    }
-
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "Not authorized");
-        _;
-    }
-
-    function setExchange(address _exchange) external onlyAdmin {
+    function setExchange(address _exchange) external onlyOwner {
         exchange = Exchange(_exchange);
     }
 
-    function setVault(address _vault) external onlyAdmin {
+    function setVault(address _vault) external onlyOwner {
         vault = Vault(_vault);
+    }
+
+    function setLever(address _lever) external onlyOwner {
+        lever = Lever(_lever);
     }
 }
