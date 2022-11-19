@@ -6,7 +6,7 @@ import "./interfaces/ILendingMarket.sol";
 import "./ErrorReporter.sol";
 import "./InterestRateModel.sol";
 import "./ExponentialNoError.sol";
-
+import "./interfaces/EIP20Interface.sol";
 /**
  * @title Compound's CToken Contract
  * @notice Abstract base for CTokens
@@ -1131,17 +1131,79 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
     /**
      * @dev Performs a transfer in, reverting upon failure. Returns the amount actually transferred to the protocol, in case of a fee.
      *  This may revert due to insufficient balance or insufficient allowance.
+     * 
+     * @dev Similar to EIP20 transfer, except it handles a False result from `transferFrom` and reverts in that case.
+     *      This will revert due to insufficient balance or insufficient allowance.
+     *      This function returns the actual amount received,
+     *      which may be less than `amount` if there is a fee attached to the transfer.
+     *
+     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
+     *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferIn(address from, uint amount) virtual internal returns (uint);
+    function doTransferIn(address from, uint amount) virtual internal returns (uint) {
+        // Read from storage once
+        address underlying_ = underlying;
+        EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying_);
+        uint balanceBefore = EIP20Interface(underlying_).balanceOf(address(this));
+        token.transferFrom(from, address(this), amount);
+        // comptroller.system().vault().decreaseBalance(underlying, amount, from); 
 
-    /**
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                       // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                      // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call
+                }
+                default {                      // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
+        require(success, "TOKEN_TRANSFER_IN_FAILED");
+
+        // Calculate the amount that was *actually* transferred
+        uint balanceAfter = EIP20Interface(underlying_).balanceOf(address(this));
+        // return amount; 
+        return balanceAfter - balanceBefore;   // underflow already checked above, just subtract
+    }
+
+/**
      * @dev Performs a transfer out, ideally returning an explanatory error code upon failure rather than reverting.
      *  If caller has not called checked protocol's balance, may revert due to insufficient cash held in the contract.
      *  If caller has checked protocol's balance, and verified it is >= amount, this should not revert in normal conditions.
+     *
+     * @dev Similar to EIP20 transfer, except it handles a False success from `transfer` and returns an explanatory
+     *      error code rather than reverting. If caller has not called checked protocol's balance, this may revert due to
+     *      insufficient cash held in this contract. If caller has checked protocol's balance prior to this call, and verified
+     *      it is >= amount, this should not revert in normal conditions.
+     *
+     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
+     *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferOut(address payable to, uint amount) virtual internal;
+    function doTransferOut(address payable to, uint amount) virtual internal {
+        EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying);
+        token.transfer(to, amount);
+        // comptroller.system().vault().increaseBalance(underlying, amount, to); 
 
-
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                      // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                     // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call
+                }
+                default {                     // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
+        require(success, "TOKEN_TRANSFER_OUT_FAILED");
+    }
     /*** Reentrancy Guard ***/
 
     /**

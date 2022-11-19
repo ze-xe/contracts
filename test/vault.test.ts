@@ -26,7 +26,7 @@ describe('vault', function () {
 		await eth.mint(user1.address, 100);
 		await eth.connect(user1).approve(vault.address, 100);
 		await vault.connect(user1).deposit(eth.address, 100);
-		expect(await vault.connect(user1).getBalance(eth.address)).to.be.equal(
+		expect(await vault.userTokenBalance(user1.address, eth.address)).to.be.equal(
 			100
 		);
 	});
@@ -35,14 +35,14 @@ describe('vault', function () {
 		await btc.mint(user1.address, 10);
 		await btc.connect(user1).approve(vault.address, 10);
 		await vault.connect(user1).deposit(btc.address, 10);
-		expect(await vault.connect(user1).getBalance(btc.address)).to.be.equal(
+		expect(await vault.userTokenBalance(user1.address, btc.address)).to.be.equal(
 			10
 		);
 	});
 
 	it('create withdraw', async () => {
 		await vault.connect(user1).withdraw(eth.address, 10);
-		expect(await vault.connect(user1).getBalance(eth.address)).to.be.equal(
+		expect(await vault.userTokenBalance(user1.address, eth.address)).to.be.equal(
 			90
 		);
 		expect(await eth.balanceOf(user1.address)).to.be.equal(10);

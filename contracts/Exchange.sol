@@ -2,15 +2,16 @@
 pragma solidity 0.8.17;
 
 import "./IExchange.sol";
-import "./Vault.sol";
 import "./System.sol";
+
+import "./lending/LendingMarket.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-import "hardhat/console.sol";
 
 contract Exchange is IExchange, EIP712 {
     using SafeERC20 for IERC20;
@@ -26,9 +27,232 @@ contract Exchange is IExchange, EIP712 {
 
     // digest => filled amount
     mapping(bytes32 => uint) private _orderFills;
+    mapping(bytes32 => uint) private _loopFills;
+    mapping(bytes32 => uint) private _loops;
 
-    constructor(address _system) EIP712("Zexe", "1") {
+    // asset => casset
+    mapping(address => LendingMarket) private _cassets;
+
+    constructor(address _system) EIP712("zexe", "1") {
         system = System(_system);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                              Public Functions                              */
+    /* -------------------------------------------------------------------------- */
+
+    function executeLimitOrder(
+        bytes memory signature,
+        address maker,
+        address token0,
+        address token1,
+        bool buy,
+        uint216 exchangeRate,
+        uint256 amount,
+        uint32 salt,
+        uint256 amountToFill
+    ) public returns (uint fillAmount) {
+        require(amountToFill > 0, "fillAmount must be greater than 0");
+        require(amount > 0, "orderAmount must be greater than 0");
+        require(exchangeRate > 0, "exchangeRate must be greater than 0");
+
+        // check signature
+        bytes32 orderId = getOrderHash(
+            maker,
+            token0,
+            token1,
+            amount,
+            buy,
+            salt,
+            exchangeRate
+        );
+
+        require(
+            SignatureChecker.isValidSignatureNow(maker, orderId, signature),
+            "invalid signature"
+        );
+
+        // Fill Amount
+        fillAmount = amountToFill.min(amount.sub(orderFills(orderId)));
+        _orderFills[orderId] = orderFills(orderId).add(fillAmount);
+
+        // Pair
+        uint pairExchangeRateDecimals = exchangeRateDecimals(
+            getPairHash(token0, token1)
+        );
+        // calulate token1 amount based on fillamount and exchange rate
+        uint256 token1Amount = fillAmount.mul(
+            uint256(exchangeRate).div(10**pairExchangeRateDecimals)
+        );
+
+        // set buyer and seller as if order is BUY
+        address buyer = maker;
+        address seller = msg.sender;
+
+        // if SELL, swap buyer and seller
+        if (!buy) {
+            seller = maker;
+            buyer = msg.sender;
+        }
+
+        IERC20(token0).transferFrom(seller, buyer, fillAmount);
+        IERC20(token1).transferFrom(buyer, seller, token1Amount);
+
+        _orderFills[orderId] = orderFills(orderId).add(fillAmount);
+        emit OrderExecuted(orderId, msg.sender, fillAmount);
+    }
+
+    function executeLeverageOrder(
+        bytes memory signature,
+        address maker,
+        address token0,
+        address token1,
+        uint256 amount,
+        bool buy,
+        uint32 salt,
+        uint216 exchangeRate,
+        uint128 borrowLimit,
+        uint128 loops,
+        uint amountToFill
+    ) external returns (uint fillAmount) {
+        LendingMarket ctoken0 = _cassets[token0];
+        LendingMarket ctoken1 = _cassets[token1];
+        require(address(ctoken0) != address(0), "Margin trading not enabled");
+        require(address(ctoken1) != address(0), "Margin trading not enabled");
+        require(loops > 0, "loops must be greater than 0");
+        require(amount > 0, "orderAmount must be greater than 0");
+        require(exchangeRate > 0, "exchangeRate must be greater than 0");
+
+        // get digest
+        bytes32 digest = getLeverageOrderHash(
+            maker,
+            token0,
+            token1,
+            amount,
+            buy,
+            salt,
+            exchangeRate,
+            borrowLimit,
+            loops
+        );
+        // check signature
+        require(
+            SignatureChecker.isValidSignatureNow(maker, digest, signature),
+            "invalid signature"
+        );
+
+        uint executionLoop = _loops[digest];
+        fillAmount = 0;
+
+        uint pairExchangeRateDecimals = exchangeRateDecimals(getPairHash(token0, token1));
+        uint pairMinToken0Amount = minToken0Amount(getPairHash(token0, token1));
+
+        for (uint i = 0; i < loops - executionLoop; i++) {
+            uint thisLoopFill = _loopFills[digest];
+            uint amountFillInThisLoop = amountToFill.min(amount - thisLoopFill);
+            _loopFills[digest] += amountFillInThisLoop;
+            fillAmount += amountFillInThisLoop;
+
+            /*** Transfer of tokens ***/
+            // set buyer and seller as if order is BUY
+            address buyer = maker;
+            address seller = msg.sender;
+
+            // if SELL, swap buyer and seller
+            if (!buy) {
+                seller = maker;
+                buyer = msg.sender;
+            }
+
+            // actual transfer
+            IERC20(token0).transferFrom(buyer, seller, amountFillInThisLoop);
+            IERC20(token1).transferFrom(seller, buyer, amountFillInThisLoop.mul(exchangeRate).div(10**pairExchangeRateDecimals));
+
+            if (thisLoopFill < pairMinToken0Amount) {
+                uint nextLoopAmount = amount;
+                for(uint j = 0; j < _loops[digest]; j++) {
+                    nextLoopAmount = nextLoopAmount.mul(borrowLimit).div(1e6);
+                }
+                // LONG token 0: supply token0 -> borrow token1 -> swap token1 to token0 -> repeat
+                // SHORT token 0: supply token1 -> borrow token0 -> swap token0 to token1 -> repeat
+                LendingMarket supplyToken = ctoken1;
+                uint supplyAmount = nextLoopAmount.mul(exchangeRate).div(10**pairExchangeRateDecimals);
+                LendingMarket borrowToken = ctoken0;
+                uint borrowAmount = nextLoopAmount;
+
+                if (buy) {
+                    supplyToken = ctoken0;
+                    supplyAmount = nextLoopAmount;
+                    borrowToken = ctoken1;
+                    borrowAmount = nextLoopAmount.mul(exchangeRate).div(10**pairExchangeRateDecimals);
+                }
+                // supply
+                supplyToken.mintFromExchange(maker, supplyAmount);
+                // borrow
+                borrowToken.borrowFromExchange(maker, borrowAmount);
+
+                _loops[digest] += 1;
+                _loopFills[digest] = 0;
+            } else if (fillAmount < pairMinToken0Amount) {
+                break;
+            }
+        }
+    }
+
+    function cancelOrder(
+        bytes memory signature,
+        address maker,
+        address token0,
+        address token1,
+        uint256 amount,
+        bool buy,
+        uint32 salt,
+        uint216 exchangeRate
+    ) external {
+        bytes32 orderId = getOrderHash(
+            maker,
+            token0,
+            token1,
+            amount,
+            buy,
+            salt,
+            exchangeRate
+        );
+
+        require(
+            SignatureChecker.isValidSignatureNow(maker, orderId, signature),
+            "invalid signature"
+        );
+
+        _orderFills[orderId] = amount;
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                               Admin Functions                              */
+    /* -------------------------------------------------------------------------- */
+    function updateMinToken0Amount(
+        address token0,
+        address token1,
+        uint256 __minToken0Amount
+    ) external onlyAdmin {
+        bytes32 pairHash = keccak256(abi.encodePacked(token0, token1));
+        _minToken0Amount[pairHash] = __minToken0Amount;
+        emit MinToken0AmountUpdated(pairHash, __minToken0Amount);
+    }
+
+    function updateExchangeRateDecimals(
+        address token0,
+        address token1,
+        uint256 __exchangeRateDecimals
+    ) external onlyAdmin {
+        bytes32 pairHash = keccak256(abi.encodePacked(token0, token1));
+        _exchangeRateDecimals[pairHash] = __exchangeRateDecimals;
+        emit ExchangeRateDecimalsUpdated(pairHash, __exchangeRateDecimals);
+    }
+
+    modifier onlyAdmin() {
+        require(msg.sender == system.owner(), "NotAuthorized");
+        _;
     }
 
     /* -------------------------------------------------------------------------- */
@@ -63,15 +287,43 @@ contract Exchange is IExchange, EIP712 {
                         token1,
                         amount,
                         buy,
-                        salt, 
+                        salt,
                         exchangeRate
                     )
                 )
             );
     }
 
-    function vault() public view returns (Vault) {
-        return system.vault();
+    function getLeverageOrderHash(
+        address maker,
+        address token0,
+        address token1,
+        uint256 amount,
+        bool buy,
+        uint32 salt,
+        uint216 exchangeRate,
+        uint176 borrowLimit,
+        uint256 leverage
+    ) public view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "LeverageOrder(address maker,address token0,address token1,uint256 amount,bool buy,uint32 salt,uint176 exchangeRate,uint32 borrowLimit,uint8 leverage)"
+                        ),
+                        maker,
+                        token0,
+                        token1,
+                        amount,
+                        buy,
+                        salt,
+                        exchangeRate,
+                        borrowLimit,
+                        leverage
+                    )
+                )
+            );
     }
 
     function placedOrders(bytes32 orderId) public view returns (Order memory) {
@@ -88,210 +340,5 @@ contract Exchange is IExchange, EIP712 {
 
     function orderFills(bytes32 digest) public view returns (uint) {
         return _orderFills[digest];
-    }
-
-
-    /* -------------------------------------------------------------------------- */
-    /*                              Public Functions                              */
-    /* -------------------------------------------------------------------------- */
-    function createLimitOrder(
-        address token0,
-        address token1,
-        uint256 amount,
-        bool buy,
-        uint216 exchangeRate,
-        uint32 salt
-    ) external {
-        uint pairMinToken0Order = minToken0Amount(getPairHash(token0, token1));
-
-        // validation
-        if (exchangeRate == 0) revert ('InvalidExchangeRate');
-        if (amount < pairMinToken0Order) revert ('InvalidOrderAmount');
-
-        bytes32 orderId = getOrderHash(
-            msg.sender, // maker
-            token0, // token0
-            token1, // token1
-            amount, // amount
-            buy, // buy
-            salt, // salt
-            exchangeRate // exchangeRate
-        );
-
-        Order storage order = _placedOrders[orderId];
-        order.maker = msg.sender;
-        order.token0 = token0;
-        order.token1 = token1;
-        order.exchangeRate = exchangeRate;
-        order.amount = amount;
-        order.buy = buy;
-        order.salt = salt;
-
-        emit OrderCreated(
-            orderId,
-            msg.sender,
-            token0,
-            token1,
-            amount,
-            exchangeRate,
-            buy,
-            salt
-        );
-    }
-
-    function updateLimitOrder(
-        bytes32 orderId,
-        uint256 amount,
-        uint216 exchangeRate
-    ) external {
-        Order storage order = _placedOrders[orderId];
-        if (order.maker != msg.sender) revert('NotAuthorized');
-
-        order.amount = amount;
-        order.exchangeRate = exchangeRate;
-
-        emit OrderUpdated(orderId, amount, exchangeRate);
-    }
-
-    function executeOnChainOrder(bytes32 orderId, uint256 fillAmount) external {
-        // Order
-        Order memory order = _placedOrders[orderId];
-        // Validate order
-        if (order.maker == address(0)) revert ('OrderNotFound');
-        if (order.amount - orderFills(orderId) < fillAmount)
-            revert ('ZeroAmt');
-
-        fillAmount = executeInternal(
-            order.maker,
-            msg.sender,
-            order.token0,
-            order.token1,
-            order.exchangeRate,
-            order.buy,
-            order.amount,
-            fillAmount,
-            orderId
-        );
-        _orderFills[orderId] = _orderFills[orderId].add(fillAmount);
-        emit OrderExecuted(orderId, msg.sender, fillAmount);
-    }
-
-    function executeLimitOrder(
-        bytes memory signature,
-        address maker,
-        address token0,
-        address token1,
-        bool buy,
-        uint216 exchangeRate,
-        uint256 amount,
-        uint32 salt,
-        uint256 amountToFill
-    ) public returns (uint fillAmount) {
-        require(amountToFill > 0, "fillAmount must be greater than 0");
-        require(amount > 0, "orderAmount must be greater than 0");
-        require(exchangeRate > 0, "exchangeRate must be greater than 0");
-
-        // check signature
-        bytes32 digest = getOrderHash(
-            maker,
-            token0,
-            token1,
-            amount,
-            buy,
-            salt,
-            exchangeRate
-        );
-
-        require(
-            SignatureChecker.isValidSignatureNow(maker, digest, signature),
-            "invalid signature"
-        );
-
-        fillAmount = executeInternal(
-            maker,
-            msg.sender,
-            token0,
-            token1,
-            exchangeRate,
-            buy,
-            amount,
-            amountToFill,
-            digest
-        );
-
-        _orderFills[digest] = orderFills(digest).add(fillAmount);
-        emit OrderExecuted(digest, msg.sender, fillAmount);
-    }
-
-    function executeInternal(
-        address maker,
-        address taker,
-        address token0,
-        address token1,
-        uint256 exchangeRate,
-        bool buy,
-        uint256 orderAmount,
-        uint256 amountToFill,
-        bytes32 orderId
-    ) internal returns (uint fillAmount) {
-        // Fill Amount
-        fillAmount = amountToFill.min(orderAmount.sub(orderFills(orderId)));
-        _orderFills[orderId] = orderFills(orderId).add(fillAmount);
-        
-        // Pair
-        uint pairExchangeRateDecimals = exchangeRateDecimals(
-            getPairHash(token0, token1)
-        );
-        // calulate token1 amount based on fillamount and exchange rate
-        uint256 token1Amount = fillAmount.mul(
-            uint256(exchangeRate).div(10**pairExchangeRateDecimals)
-        );
-
-        // set buyer and seller as if order is BUY
-        address buyer = maker;
-        address seller = taker;
-
-        // if SELL, swap buyer and seller
-        if (!buy) {
-            seller = maker;
-            buyer = taker;
-        }
-
-        // decrement seller's token0 balance
-        vault().decreaseBalance(token0, fillAmount, seller);
-        // increment buyer's token0 balance
-        vault().increaseBalance(token0, fillAmount, buyer);
-        // decrement buyer's token1 balance
-        vault().decreaseBalance(token1, token1Amount, buyer);
-        // increment seller's token1 balance
-        vault().increaseBalance(token1, token1Amount, seller);
-    }
-
-    /* -------------------------------------------------------------------------- */
-    /*                               Admin Functions                              */
-    /* -------------------------------------------------------------------------- */
-    function updateMinToken0Amount(
-        address token0,
-        address token1,
-        uint256 __minToken0Amount
-    ) external onlyAdmin {
-        bytes32 pairHash = keccak256(abi.encodePacked(token0, token1));
-        _minToken0Amount[pairHash] = __minToken0Amount;
-        emit MinToken0AmountUpdated(pairHash, __minToken0Amount);
-    }
-
-    function updateExchangeRateDecimals(
-        address token0,
-        address token1,
-        uint256 __exchangeRateDecimals
-    ) external onlyAdmin {
-        bytes32 pairHash = keccak256(abi.encodePacked(token0, token1));
-        _exchangeRateDecimals[pairHash] = __exchangeRateDecimals;
-        emit ExchangeRateDecimalsUpdated(pairHash, __exchangeRateDecimals);
-    }
-
-    modifier onlyAdmin() {
-        require(msg.sender == system.owner(), "NotAuthorized");
-        _;
     }
 }

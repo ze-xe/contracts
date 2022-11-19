@@ -50,6 +50,12 @@ contract LendingMarket is BaseLendingMarket {
         return NO_ERROR;
     }
 
+    function mintFromExchange(address mintFor, uint mintAmount) override external returns (uint) {
+        accrueInterest();
+        mintFresh(mintFor, mintAmount);
+        return NO_ERROR;
+    }
+
     /**
      * @notice Sender redeems cTokens in exchange for the underlying asset
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
@@ -58,6 +64,12 @@ contract LendingMarket is BaseLendingMarket {
      */
     function redeem(uint redeemTokens) override external returns (uint) {
         redeemInternal(redeemTokens);
+        return NO_ERROR;
+    }
+
+    function redeemFromExchange(address redeemFor, uint redeemTokens) override external returns (uint) {
+        accrueInterest();
+        redeemFresh(payable(redeemFor), redeemTokens, 0);
         return NO_ERROR;
     }
 
@@ -82,6 +94,12 @@ contract LendingMarket is BaseLendingMarket {
         return NO_ERROR;
     }
 
+    function borrowFromExchange(address borrowFor, uint borrowAmount) override external returns (uint) {
+        accrueInterest();
+        borrowFresh(payable(borrowFor), borrowAmount);
+        return NO_ERROR;
+    }
+
     /**
      * @notice Sender repays their own borrow
      * @param repayAmount The amount to repay, or -1 for the full outstanding amount
@@ -89,6 +107,12 @@ contract LendingMarket is BaseLendingMarket {
      */
     function repayBorrow(uint repayAmount) override external returns (uint) {
         repayBorrowInternal(repayAmount);
+        return NO_ERROR;
+    }
+
+    function repayFromExchange(address repayFor, uint repayAmount) override external returns (uint) {
+        accrueInterest();
+        repayBorrowFresh(repayFor, repayFor, repayAmount);
         return NO_ERROR;
     }
 
@@ -146,72 +170,5 @@ contract LendingMarket is BaseLendingMarket {
     function getCashPrior() virtual override internal view returns (uint) {
         EIP20Interface token = EIP20Interface(underlying);
         return token.balanceOf(address(this));
-    }
-
-    /**
-     * @dev Similar to EIP20 transfer, except it handles a False result from `transferFrom` and reverts in that case.
-     *      This will revert due to insufficient balance or insufficient allowance.
-     *      This function returns the actual amount received,
-     *      which may be less than `amount` if there is a fee attached to the transfer.
-     *
-     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
-     *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
-     */
-    function doTransferIn(address from, uint amount) virtual override internal returns (uint) {
-        // Read from storage once
-        address underlying_ = underlying;
-        EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying_);
-        uint balanceBefore = EIP20Interface(underlying_).balanceOf(address(this));
-        token.transferFrom(from, address(this), amount);
-
-        bool success;
-        assembly {
-            switch returndatasize()
-                case 0 {                       // This is a non-standard ERC-20
-                    success := not(0)          // set success to true
-                }
-                case 32 {                      // This is a compliant ERC-20
-                    returndatacopy(0, 0, 32)
-                    success := mload(0)        // Set `success = returndata` of override external call
-                }
-                default {                      // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
-        }
-        require(success, "TOKEN_TRANSFER_IN_FAILED");
-
-        // Calculate the amount that was *actually* transferred
-        uint balanceAfter = EIP20Interface(underlying_).balanceOf(address(this));
-        return balanceAfter - balanceBefore;   // underflow already checked above, just subtract
-    }
-
-    /**
-     * @dev Similar to EIP20 transfer, except it handles a False success from `transfer` and returns an explanatory
-     *      error code rather than reverting. If caller has not called checked protocol's balance, this may revert due to
-     *      insufficient cash held in this contract. If caller has checked protocol's balance prior to this call, and verified
-     *      it is >= amount, this should not revert in normal conditions.
-     *
-     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
-     *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
-     */
-    function doTransferOut(address payable to, uint amount) virtual override internal {
-        EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying);
-        token.transfer(to, amount);
-
-        bool success;
-        assembly {
-            switch returndatasize()
-                case 0 {                      // This is a non-standard ERC-20
-                    success := not(0)          // set success to true
-                }
-                case 32 {                     // This is a compliant ERC-20
-                    returndatacopy(0, 0, 32)
-                    success := mload(0)        // Set `success = returndata` of override external call
-                }
-                default {                     // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
-        }
-        require(success, "TOKEN_TRANSFER_OUT_FAILED");
     }
 }

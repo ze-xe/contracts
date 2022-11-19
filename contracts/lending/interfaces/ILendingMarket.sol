@@ -234,6 +234,12 @@ abstract contract ILendingMarket is LendingMarketStorage {
     function _reduceReserves(uint reduceAmount) virtual external returns (uint);
     function _setInterestRateModel(InterestRateModel newInterestRateModel) virtual external returns (uint);
 
+    /*** Exchange Functions ***/
+    function mintFromExchange(address mintFor, uint mintAmount) virtual external returns (uint);
+    function redeemFromExchange(address redeemFor, uint redeemTokens) virtual external returns (uint);
+    function borrowFromExchange(address borrowFor, uint borrowAmount) virtual external returns (uint);
+    function repayFromExchange(address repayFor, uint repayAmount) virtual external returns (uint);
+
     /*** User Interface ***/
 
     function mint(uint mintAmount) virtual external returns (uint);

@@ -3,6 +3,7 @@ pragma solidity ^0.8.10;
 
 import "./LendingMarket.sol";
 import "./PriceOracle.sol"; 
+import "../System.sol";
 
 contract UnitrollerAdminStorage {
     /**
@@ -28,6 +29,10 @@ contract UnitrollerAdminStorage {
 
 contract LeverStorage is UnitrollerAdminStorage {
 
+    /**
+     * @notice System gives access to zexe
+     */
+    System public _system;
     /**
      * @notice Oracle which gives the price of any given asset
      */

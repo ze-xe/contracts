@@ -5,9 +5,10 @@ import "./LendingMarket.sol";
 import "./ErrorReporter.sol";
 import "./PriceOracle.sol"; 
 import "./interfaces/ILever.sol";
+
 import "./LeverStorage.sol";
 import "./Unitroller.sol"; 
-import "hardhat/console.sol";
+import "./ExponentialNoError.sol";
 
 /**
  * @title Compound's Comptroller Contract
@@ -39,7 +40,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
     event NewPauseGuardian(address oldPauseGuardian, address newPauseGuardian);
 
     /// @notice Emitted when an action is paused globally
-    event ActionPaused(string action, bool pauseState);
+    event ActionPausedGlobally(string action, bool pauseState);
 
     /// @notice Emitted when an action is paused on a market
     event ActionPaused(LendingMarket cToken, string action, bool pauseState);
@@ -59,8 +60,13 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
     // No collateralFactorMantissa may exceed this value
     uint internal constant collateralFactorMaxMantissa = 0.90e18; // 0.95
 
-    constructor() {
-        admin = msg.sender;
+    constructor(System __system) {
+        admin = msg.sender; 
+        _system = __system;
+    }
+
+    function system() public view returns (System) {
+        return _system;
     }
 
     /*** Assets You Are In ***/
@@ -204,7 +210,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param mintAmount The amount of underlying being supplied to the market in exchange for tokens
      * @return 0 if the mint is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
-    function mintAllowed(address cToken, address minter, uint mintAmount) override external returns (uint) {
+    function mintAllowed(address cToken, address minter, uint mintAmount) override external view returns (uint) {
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!mintGuardianPaused[cToken], "mint is paused");
 
@@ -246,7 +252,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param redeemTokens The number of cTokens to exchange for the underlying asset in the market
      * @return 0 if the redeem is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
-    function redeemAllowed(address cToken, address redeemer, uint redeemTokens) override external returns (uint) {
+    function redeemAllowed(address cToken, address redeemer, uint redeemTokens) override external view returns (uint) {
         uint allowed = redeemAllowedInternal(cToken, redeemer, redeemTokens);
         if (allowed != uint(Error.NO_ERROR)) {
             return allowed;
@@ -284,7 +290,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param redeemAmount The amount of the underlying asset being redeemed
      * @param redeemTokens The number of tokens being redeemed
      */
-    function redeemVerify(address cToken, address redeemer, uint redeemAmount, uint redeemTokens) override external {
+    function redeemVerify(address cToken, address redeemer, uint redeemAmount, uint redeemTokens) override pure external {
         // Shh - currently unused
         cToken;
         redeemer;
@@ -315,9 +321,9 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
             require(msg.sender == cToken, "sender must be cToken");
 
             // attempt to add borrower to the market
-            Error err = addToMarketInternal(LendingMarket(msg.sender), borrower);
-            if (err != Error.NO_ERROR) {
-                return uint(err);
+            Error _err = addToMarketInternal(LendingMarket(msg.sender), borrower);
+            if (_err != Error.NO_ERROR) {
+                return uint(_err);
             }
 
             // it should be impossible to break the important invariant
@@ -327,7 +333,6 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         if (oracle.getUnderlyingPrice(LendingMarket(cToken)) == 0) {
             return uint(Error.PRICE_ERROR);
         }
-
 
         uint borrowCap = borrowCaps[cToken];
         // Borrow cap of 0 corresponds to unlimited borrowing
@@ -343,7 +348,6 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
             return uint(err);
         }
         if (shortfall > 0) {
-            console.log('damn shortfall', shortfall);
             return uint(Error.INSUFFICIENT_LIQUIDITY);
         }
 
@@ -380,7 +384,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         address cToken,
         address payer,
         address borrower,
-        uint repayAmount) override external returns (uint) {
+        uint repayAmount) override external view returns (uint) {
         // Shh - currently unused
         payer;
         borrower;
@@ -390,8 +394,6 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
             return uint(Error.MARKET_NOT_LISTED);
         }
 
-        // Keep the flywheel moving
-        Exp memory borrowIndex = Exp({mantissa: LendingMarket(cToken).borrowIndex()});
         return uint(Error.NO_ERROR);
     }
 
@@ -434,7 +436,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         address cTokenCollateral,
         address liquidator,
         address borrower,
-        uint repayAmount) override external returns (uint) {
+        uint repayAmount) override external view returns (uint) {
         // Shh - currently unused
         liquidator;
 
@@ -509,7 +511,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         address cTokenBorrowed,
         address liquidator,
         address borrower,
-        uint seizeTokens) override external returns (uint) {
+        uint seizeTokens) override external view returns (uint) {
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!seizeGuardianPaused, "seize is paused");
 
@@ -562,7 +564,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param transferTokens The number of cTokens to transfer
      * @return 0 if the transfer is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
-    function transferAllowed(address cToken, address src, address dst, uint transferTokens) override external returns (uint) {
+    function transferAllowed(address cToken, address src, address dst, uint transferTokens) override external view returns (uint) {
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!transferGuardianPaused, "transfer is paused");
 
@@ -574,7 +576,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         }
 
         return uint(Error.NO_ERROR);
-    }
+    } 
 
     /**
      * @notice Validates transfer and reverts on rejection. May emit logs.
@@ -677,7 +679,6 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
 
         AccountLiquidityLocalVars memory vars; // Holds all our calculation results
         uint oErr;
-
         // For each asset the account is in
         LendingMarket[] memory assets = accountAssets[account];
         for (uint i = 0; i < assets.length; i++) {
@@ -685,7 +686,6 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
 
             // Read the balances and exchange rate from the cToken
             (oErr, vars.cTokenBalance, vars.borrowBalance, vars.exchangeRateMantissa) = asset.getAccountSnapshot(account);
-            console.log('asset', vars.cTokenBalance, vars.borrowBalance);
             if (oErr != 0) { // semi-opaque error code, we assume NO_ERROR == 0 is invariant between upgrades
                 return (Error.SNAPSHOT_ERROR, 0, 0);
             }
@@ -702,11 +702,13 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
             // Pre-compute a conversion factor from tokens -> ether (normalized price value)
             vars.tokensToDenom = mul_(mul_(vars.collateralFactor, vars.exchangeRate), vars.oraclePrice);
 
+
             // sumCollateral += tokensToDenom * cTokenBalance
             vars.sumCollateral = mul_ScalarTruncateAddUInt(vars.tokensToDenom, vars.cTokenBalance, vars.sumCollateral);
 
             // sumBorrowPlusEffects += oraclePrice * borrowBalance
             vars.sumBorrowPlusEffects = mul_ScalarTruncateAddUInt(vars.oraclePrice, vars.borrowBalance, vars.sumBorrowPlusEffects);
+
 
             // Calculate effects of interacting with cTokenModify
             if (asset == cTokenModify) {
@@ -719,7 +721,6 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
                 vars.sumBorrowPlusEffects = mul_ScalarTruncateAddUInt(vars.oraclePrice, borrowAmount, vars.sumBorrowPlusEffects);
             }
 
-            console.log('sum', vars.sumBorrowPlusEffects, vars.sumCollateral);
         }
 
 
@@ -996,7 +997,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         require(msg.sender == admin || state == true, "only admin can unpause");
 
         transferGuardianPaused = state;
-        emit ActionPaused("Transfer", state);
+        emit ActionPausedGlobally("Transfer", state);
         return state;
     }
 
@@ -1005,7 +1006,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         require(msg.sender == admin || state == true, "only admin can unpause");
 
         seizeGuardianPaused = state;
-        emit ActionPaused("Seize", state);
+        emit ActionPausedGlobally("Seize", state);
         return state;
     }
 

@@ -42,11 +42,23 @@ interface IExchange {
     struct Order {
         address maker;
         address token0;
-        address token1;
+        address token1; 
         uint256 amount;
         bool buy;
         uint32 salt;
         uint216 exchangeRate;
+    }
+
+    struct LeverageOrder {
+        address maker;
+        address token0;
+        address token1;
+        uint256 amount;
+        bool buy;
+        uint32 salt;
+        uint176 exchangeRate;
+        uint32 borrowLimit;
+        uint8 loops;
     }
 
     struct Pair {

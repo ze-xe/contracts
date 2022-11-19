@@ -19,24 +19,23 @@ describe('zexe', function () {
 		usdt = deployments.usdc;
 		btc = deployments.btc;
 		exchange = deployments.exchange;
-		vault = deployments.vault;
 	});
 
 	it('mint 10 btc to user1, 1000000 usdt to user2', async () => {
 		const btcAmount = ethers.utils.parseEther('10');
 		await btc.mint(user1.address, btcAmount);
-		await btc.connect(user1).approve(vault.address, btcAmount);
-		await vault.connect(user1).deposit(btc.address, btcAmount);
+		// approve for exchange
+		await btc.connect(user1).approve(exchange.address, btcAmount);
 
 		const usdtAmount = ethers.utils.parseEther('1000000');
 		await usdt.mint(user2.address, usdtAmount);
-		await usdt.connect(user2).approve(vault.address, usdtAmount);
-		await vault.connect(user2).deposit(usdt.address, usdtAmount);
+		// approve for exchange
+		await usdt.connect(user2).approve(exchange.address, usdtAmount);
 	});
 
 	it('user1 creates limit order to sell 1 btc @ 19100', async () => {
 		const domain = {
-			name: 'Zexe',
+			name: 'zexe',
 			version: '1',
 			chainId: hre.network.config.chainId,
 			verifyingContract: exchange.address,
@@ -80,9 +79,9 @@ describe('zexe', function () {
 	});
 
 	it('buy user1s btc order @ 19100', async () => {
-		let user1BtcBalance = await vault.userTokenBalance(user1.address, btc.address);
+		let user1BtcBalance = await btc.balanceOf(user1.address);
 		expect(user1BtcBalance).to.equal(ethers.utils.parseEther('10'));
-		let user2BtcBalance = await vault.userTokenBalance(user2.address, btc.address);
+		let user2BtcBalance = await btc.balanceOf(user2.address);
 		expect(user2BtcBalance).to.equal(ethers.utils.parseEther('0'));
 
 		const btcAmount = ethers.utils.parseEther('5');
@@ -98,9 +97,9 @@ describe('zexe', function () {
 			btcAmount
 		);
 
-		user1BtcBalance = await vault.userTokenBalance(user1.address, btc.address);
+		user1BtcBalance = await btc.balanceOf(user1.address);
 		expect(user1BtcBalance).to.equal(ethers.utils.parseEther('9'));
-		user2BtcBalance = await vault.userTokenBalance(user2.address, btc.address);
+		user2BtcBalance = await btc.balanceOf(user2.address);
 		expect(user2BtcBalance).to.equal(ethers.utils.parseEther('1'));
 	});
 });
