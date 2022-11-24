@@ -63,6 +63,7 @@ export async function deploy(logs = false): Promise<Deployments> {
   await oracle.setUnderlyingPrice(ceth.address, inEth('1124'));
   await lever._supportMarket(ceth.address)
   await lever._setCollateralFactor(ceth.address, inEth('0.9'));
+  await exchange.enableMarginTrading(eth.address, ceth.address);
   if(logs) console.log("ETH market deployed to:", ceth.address);
 
   const btc = await ERC20.deploy("BTC", "BTC");
@@ -72,6 +73,7 @@ export async function deploy(logs = false): Promise<Deployments> {
   await oracle.setUnderlyingPrice(cbtc.address, inEth('16724'));
   await lever._supportMarket(cbtc.address)
   await lever._setCollateralFactor(cbtc.address, inEth('0.9'));
+  await exchange.enableMarginTrading(btc.address, cbtc.address);
   if(logs) console.log("BTC market deployed to:", cbtc.address);
 
   const usdc = await ERC20.deploy("USDC", "USDC");
@@ -81,12 +83,13 @@ export async function deploy(logs = false): Promise<Deployments> {
   await oracle.setUnderlyingPrice(cusdc.address, inEth('1'));
   await lever._supportMarket(cusdc.address)
   await lever._setCollateralFactor(cusdc.address, inEth('0.9'));
+  await exchange.enableMarginTrading(usdc.address, cusdc.address);
   if(logs) console.log("USDC market deployed to:", cusdc.address);
   
   await exchange.updateMinToken0Amount(eth.address, usdc.address, ethers.utils.parseEther('0.001'))
-  await exchange.updateMinToken0Amount(btc.address, usdc.address, ethers.utils.parseEther('0.0001'))
-  await exchange.updateExchangeRateDecimals(eth.address, usdc.address, '2')
-  await exchange.updateExchangeRateDecimals(btc.address, usdc.address, '2')
+  await exchange.updateMinToken0Amount(btc.address, usdc.address, ethers.utils.parseEther('0.00001'))
+  await exchange.updateExchangeRateDecimals(eth.address, usdc.address, '8')
+  await exchange.updateExchangeRateDecimals(btc.address, usdc.address, '8')
 
   return { system, exchange, lever, usdc, cusdc, btc, cbtc, eth, ceth, oracle, irm };
 }

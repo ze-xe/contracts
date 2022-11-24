@@ -7,6 +7,9 @@ import "./ErrorReporter.sol";
 import "./InterestRateModel.sol";
 import "./ExponentialNoError.sol";
 import "./interfaces/EIP20Interface.sol";
+
+import "hardhat/console.sol";
+
 /**
  * @title Compound's CToken Contract
  * @notice Abstract base for CTokens
@@ -478,6 +481,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      * @param redeemAmountIn The number of underlying tokens to receive from redeeming cTokens (only one of redeemTokensIn or redeemAmountIn may be non-zero)
      */
     function redeemFresh(address payable redeemer, uint redeemTokensIn, uint redeemAmountIn) internal {
+        console.log("Redeeming fresh");
         require(redeemTokensIn == 0 || redeemAmountIn == 0, "one of redeemTokensIn or redeemAmountIn must be zero");
 
         /* exchangeRate = invoke Exchange Rate Stored() */

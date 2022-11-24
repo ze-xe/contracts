@@ -50,7 +50,7 @@ describe('zexe', function () {
 				{ name: 'amount', type: 'uint256' },
 				{ name: 'buy', type: 'bool' },
                 { name: 'salt', type: 'uint32' },
-				{ name: 'exchangeRate', type: 'uint216' },
+				{ name: 'exchangeRate', type: 'uint216' }
 			],
 		};
 
@@ -65,10 +65,6 @@ describe('zexe', function () {
             exchangeRate: (19100*100).toString(),
 		};
 
-        // get typed hash
-        const hash = ethers.utils._TypedDataEncoder.hash(domain, types, value);
-        expect(await exchange.getOrderHash(value.maker, value.token0, value.token1, value.amount, value.buy, value.salt, value.exchangeRate)).to.equal(hash);
-
 		// sign typed data
 		const storedSignature = await user1._signTypedData(
 			domain,
@@ -76,6 +72,10 @@ describe('zexe', function () {
 			value
 		);
 		orderIds.push(storedSignature);
+
+		// get typed hash
+		const hash = ethers.utils._TypedDataEncoder.hash(domain, types, value);
+		expect(await exchange.verifyOrderHash(storedSignature, value.maker, value.token0, value.token1, value.amount, value.buy, value.salt, value.exchangeRate)).to.equal(hash);
 	});
 
 	it('buy user1s btc order @ 19100', async () => {

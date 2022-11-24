@@ -54,7 +54,7 @@ interface IExchange {
         address token0;
         address token1;
         uint256 amount;
-        bool buy;
+        bool long;
         uint32 salt;
         uint176 exchangeRate;
         uint32 borrowLimit;

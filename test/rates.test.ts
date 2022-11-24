@@ -22,7 +22,6 @@ describe('rates', function () {
 		eth = deployments.eth;
 		ceth = deployments.ceth;
 		exchange = deployments.exchange;
-		vault = deployments.vault;
         lever = deployments.lever;
 	});
 

@@ -51,6 +51,7 @@ contract LendingMarket is BaseLendingMarket {
     }
 
     function mintFromExchange(address mintFor, uint mintAmount) override external returns (uint) {
+        console.log("minting %s %s", mintAmount, name);
         accrueInterest();
         mintFresh(mintFor, mintAmount);
         return NO_ERROR;
@@ -95,6 +96,7 @@ contract LendingMarket is BaseLendingMarket {
     }
 
     function borrowFromExchange(address borrowFor, uint borrowAmount) override external returns (uint) {
+        console.log("borrowing %s %s", borrowAmount, name);
         accrueInterest();
         borrowFresh(payable(borrowFor), borrowAmount);
         return NO_ERROR;
