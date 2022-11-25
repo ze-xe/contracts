@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
 import { BigNumber, Contract } from 'ethers';
-import { deploy } from '../scripts/deploy';
+import { deploy } from '../../scripts/deploy';
 
 const ethers = hre.ethers;
 const web3 = require('web3');

@@ -8,7 +8,7 @@ const ethers = hre.ethers;
 const web3 = require('web3');
 const toWei = (x: { toString: () => any }) => web3.utils.toWei(x.toString());
 
-describe('zexe', function () {
+describe('reverse short', function () {
 	let usdc: Contract, btc: Contract, exchange: Contract, cbtc: Contract, cusdc: Contract, lever: Contract;
 	let owner: any, user1: any, user2: any, user3: any, user4: any, user5: any, user6;
 	let orderIds: string[] = [];
@@ -79,7 +79,7 @@ describe('zexe', function () {
 				{ name: 'token0', type: 'address' },
 				{ name: 'token1', type: 'address' },
 				{ name: 'amount', type: 'uint256' },
-				{ name: 'buy', type: 'bool' },
+				{ name: 'long', type: 'bool' },
                 { name: 'salt', type: 'uint32' },
 				{ name: 'exchangeRate', type: 'uint176' },
 				{ name: 'borrowLimit', type: 'uint32' },
@@ -93,7 +93,7 @@ describe('zexe', function () {
 			token0: btc.address, 
             token1: usdc.address,
 			amount: ethers.utils.parseEther('1').toString(),
-			buy: false, // long
+			long: false, // long
             salt: '12345',
             exchangeRate: (20000*100).toString(),
             borrowLimit: 0.5 * 1e6,
@@ -112,8 +112,8 @@ describe('zexe', function () {
 
 		// get typed hash
 		const hash = ethers.utils._TypedDataEncoder.hash(domain, types, value);
-		expect(await exchange.verifyLeverageOrderHash(storedSignature, value)).to.equal(hash);
         orderIds.push(hash);
+		expect(await exchange.verifyLeverageOrderHash(storedSignature, value)).to.equal(hash);
 	});
 
 	it('buy user1s btc order @ 20000', async () => {

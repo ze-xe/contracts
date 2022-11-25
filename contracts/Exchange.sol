@@ -47,13 +47,7 @@ contract Exchange is IExchange, EIP712 {
 
     function executeLimitOrder(
         bytes memory signature,
-        address maker,
-        address token0,
-        address token1,
-        bool buy,
-        uint216 exchangeRate,
-        uint256 amount,
-        uint32 salt,
+        Order memory order,
         uint256 amountToFill
     ) public returns (uint fillAmount) {
         require(amountToFill > 0, "fillAmount must be greater than 0");
@@ -61,40 +55,34 @@ contract Exchange is IExchange, EIP712 {
         // check signature
         bytes32 orderId = verifyOrderHash(
             signature,
-            maker,
-            token0,
-            token1,
-            amount,
-            buy,
-            salt,
-            exchangeRate
+            order
         );
 
         // Fill Amount
-        fillAmount = amountToFill.min(amount.sub(orderFills(orderId)));
+        fillAmount = amountToFill.min(order.amount.sub(orderFills(orderId)));
         _orderFills[orderId] = orderFills(orderId).add(fillAmount);
 
         // Pair
         uint pairExchangeRateDecimals = exchangeRateDecimals(
-            getPairHash(token0, token1)
+            getPairHash(order.token0, order.token1)
         );
         // calulate token1 amount based on fillamount and exchange rate
         uint256 token1Amount = fillAmount.mul(
-            uint256(exchangeRate).div(10**pairExchangeRateDecimals)
+            uint256(order.exchangeRate).div(10**pairExchangeRateDecimals)
         );
 
         // set buyer and seller as if order is BUY
-        address buyer = maker;
+        address buyer = order.maker;
         address seller = msg.sender;
 
         // if SELL, swap buyer and seller
-        if (!buy) {
-            seller = maker;
+        if (!order.buy) {
+            seller = order.maker;
             buyer = msg.sender;
         }
 
-        IERC20(token0).transferFrom(seller, buyer, fillAmount);
-        IERC20(token1).transferFrom(buyer, seller, token1Amount);
+        IERC20(order.token0).transferFrom(seller, buyer, fillAmount);
+        IERC20(order.token1).transferFrom(buyer, seller, token1Amount);
 
         _orderFills[orderId] = orderFills(orderId).add(fillAmount);
         emit OrderExecuted(orderId, msg.sender, fillAmount);
@@ -269,26 +257,14 @@ contract Exchange is IExchange, EIP712 {
 
     function cancelOrder(
         bytes memory signature,
-        address maker,
-        address token0,
-        address token1,
-        uint256 amount,
-        bool buy,
-        uint32 salt,
-        uint216 exchangeRate
+        Order memory order
     ) external {
         bytes32 orderId = verifyOrderHash(
             signature,
-            maker,
-            token0,
-            token1,
-            amount,
-            buy,
-            salt,
-            exchangeRate
+            order
         );
 
-        _orderFills[orderId] = amount;
+        _orderFills[orderId] = order.amount;
     }
 
     /* -------------------------------------------------------------------------- */
@@ -337,18 +313,12 @@ contract Exchange is IExchange, EIP712 {
 
     function verifyOrderHash(
         bytes memory signature,
-        address maker,
-        address token0,
-        address token1,
-        uint256 amount,
-        bool buy,
-        uint32 salt,
-        uint216 exchangeRate
+        Order memory order
     ) public view returns (bytes32) {
-        require(amount > 0, "orderAmount must be greater than 0");
-        require(exchangeRate > 0, "exchangeRate must be greater than 0");
-        require(token0 != address(0), "Invalid token0 address");
-        require(token1 != address(0), "Invalid token1 address");
+        require(order.amount > 0, "orderAmount must be greater than 0");
+        require(order.exchangeRate > 0, "exchangeRate must be greater than 0");
+        require(order.token0 != address(0), "Invalid token0 address");
+        require(order.token1 != address(0), "Invalid token1 address");
 
         bytes32 digest = _hashTypedDataV4(
                 keccak256(
@@ -356,18 +326,18 @@ contract Exchange is IExchange, EIP712 {
                         keccak256(
                             "Order(address maker,address token0,address token1,uint256 amount,bool buy,uint32 salt,uint216 exchangeRate)"
                         ),
-                        maker,
-                        token0,
-                        token1,
-                        amount,
-                        buy,
-                        salt,
-                        exchangeRate
+                        order.maker,
+                        order.token0,
+                        order.token1,
+                        order.amount,
+                        order.buy,
+                        order.salt,
+                        order.exchangeRate
                     )
                 )
             );
         require(
-            SignatureChecker.isValidSignatureNow(maker, digest, signature),
+            SignatureChecker.isValidSignatureNow(order.maker, digest, signature),
             "invalid signature"
         );
 

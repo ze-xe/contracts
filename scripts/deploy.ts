@@ -22,6 +22,8 @@ export async function deploy(logs = false): Promise<Deployments> {
   const System = await ethers.getContractFactory("System");
   const system = await System.deploy();
   await system.deployed();
+
+  if(logs) console.log("System deployed to:", system.address);
   
   /* -------------------------------------------------------------------------- */
   /*                                  Exchange                                  */
@@ -33,6 +35,11 @@ export async function deploy(logs = false): Promise<Deployments> {
   if(logs) console.log("Exchanger deployed to:", exchange.address);
   await system.setExchange(exchange.address)
 
+  // await hre.run("verify:verify", {
+  //   address: exchange.address,
+  //   constructorArguments: [system.address],
+  // });
+
   /* -------------------------------------------------------------------------- */
   /*                                    Lever                                   */
   /* -------------------------------------------------------------------------- */
@@ -42,6 +49,11 @@ export async function deploy(logs = false): Promise<Deployments> {
 
   if(logs) console.log("Lever deployed to:", lever.address);
   await system.setLever(lever.address);
+
+  // await hre.run("verify:verify", {
+  //   address: lever.address,
+  //   constructorArguments: [system.address],
+  // });
 
   /* -------------------------------------------------------------------------- */
   /*                                    Tokens                                  */
@@ -60,6 +72,10 @@ export async function deploy(logs = false): Promise<Deployments> {
   await eth.deployed();
   const ceth = await LendingMarket.deploy(eth.address, lever.address, irm.address, inEth('2'), 'ETH', 'ETH', 18);
   await ceth.deployed();
+  // await hre.run("verify:verify", {
+  //   address: ceth.address,
+  //   constructorArguments: [eth.address, lever.address, irm.address, inEth('2'), 'ETH', 'ETH', 18],
+  // });
   await oracle.setUnderlyingPrice(ceth.address, inEth('1124'));
   await lever._supportMarket(ceth.address)
   await lever._setCollateralFactor(ceth.address, inEth('0.9'));
@@ -70,6 +86,10 @@ export async function deploy(logs = false): Promise<Deployments> {
   await btc.deployed();
   const cbtc = await LendingMarket.deploy(btc.address, lever.address, irm.address, inEth('2'), 'BTC', 'BTC', 18);
   await cbtc.deployed();
+  // await hre.run("verify:verify", {
+  //   address: cbtc.address,
+  //   constructorArguments: [btc.address, lever.address, irm.address, inEth('2'), 'BTC', 'BTC', 18],
+  // });
   await oracle.setUnderlyingPrice(cbtc.address, inEth('16724'));
   await lever._supportMarket(cbtc.address)
   await lever._setCollateralFactor(cbtc.address, inEth('0.9'));
@@ -80,6 +100,10 @@ export async function deploy(logs = false): Promise<Deployments> {
   await usdc.deployed();
   const cusdc = await LendingMarket.deploy(usdc.address, lever.address, irm.address, inEth('10'), 'USDC', 'USDC', 18);
   await cusdc.deployed();
+  // await hre.run("verify:verify", {
+  //   address: cusdc.address,
+  //   constructorArguments: [usdc.address, lever.address, irm.address, inEth('10'), 'USDC', 'USDC', 18],
+  // });
   await oracle.setUnderlyingPrice(cusdc.address, inEth('1'));
   await lever._supportMarket(cusdc.address)
   await lever._setCollateralFactor(cusdc.address, inEth('0.9'));

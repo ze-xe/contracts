@@ -12,6 +12,8 @@ describe('zexe', function () {
 	let usdt: Contract, btc: Contract, exchange: Contract, vault: Contract;
 	let owner: any, user1: any, user2: any, user3, user4, user5, user6;
 	let orderIds: string[] = [];
+	let signatures: string[] = [];
+	let orders: any[] = []
 	before(async () => {
 		[owner, user1, user2, user3, user4, user5, user6] =
 			await ethers.getSigners();
@@ -64,6 +66,7 @@ describe('zexe', function () {
             salt: '12345',
             exchangeRate: (19100*100).toString(),
 		};
+		orders.push(value);
 
 		// sign typed data
 		const storedSignature = await user1._signTypedData(
@@ -71,11 +74,12 @@ describe('zexe', function () {
 			types,
 			value
 		);
-		orderIds.push(storedSignature);
+		signatures.push(storedSignature);
 
 		// get typed hash
 		const hash = ethers.utils._TypedDataEncoder.hash(domain, types, value);
-		expect(await exchange.verifyOrderHash(storedSignature, value.maker, value.token0, value.token1, value.amount, value.buy, value.salt, value.exchangeRate)).to.equal(hash);
+		orderIds.push(hash);
+		expect(await exchange.verifyOrderHash(storedSignature, value)).to.equal(hash);
 	});
 
 	it('buy user1s btc order @ 19100', async () => {
@@ -86,14 +90,8 @@ describe('zexe', function () {
 
 		const btcAmount = ethers.utils.parseEther('5');
 		await exchange.connect(user2).executeLimitOrder(
-            orderIds[0],
-            user1.address,
-			btc.address,
-			usdt.address,
-			false, // sell
-			19100*100,
-            ethers.utils.parseEther('1').toString(),
-            '12345',
+            signatures[0],
+            orders[0],
 			btcAmount
 		);
 
