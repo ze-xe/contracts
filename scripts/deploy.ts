@@ -80,6 +80,7 @@ export async function deploy(logs = false): Promise<Deployments> {
   await lever._supportMarket(ceth.address)
   await lever._setCollateralFactor(ceth.address, inEth('0.9'));
   await exchange.enableMarginTrading(eth.address, ceth.address);
+  if(logs) console.log("ETH deployed to:", eth.address);
   if(logs) console.log("ETH market deployed to:", ceth.address);
 
   const btc = await ERC20.deploy("BTC", "BTC");
@@ -94,6 +95,7 @@ export async function deploy(logs = false): Promise<Deployments> {
   await lever._supportMarket(cbtc.address)
   await lever._setCollateralFactor(cbtc.address, inEth('0.9'));
   await exchange.enableMarginTrading(btc.address, cbtc.address);
+  if(logs) console.log("BTC deployed to:", btc.address);
   if(logs) console.log("BTC market deployed to:", cbtc.address);
 
   const usdc = await ERC20.deploy("USDC", "USDC");
@@ -108,6 +110,7 @@ export async function deploy(logs = false): Promise<Deployments> {
   await lever._supportMarket(cusdc.address)
   await lever._setCollateralFactor(cusdc.address, inEth('0.9'));
   await exchange.enableMarginTrading(usdc.address, cusdc.address);
+  if(logs) console.log("USDC deployed to:", usdc.address);
   if(logs) console.log("USDC market deployed to:", cusdc.address);
   
   await exchange.updateMinToken0Amount(eth.address, usdc.address, ethers.utils.parseEther('0.001'))
