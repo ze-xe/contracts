@@ -32,9 +32,7 @@ interface IExchange {
     );
 
     event OrderExecuted(bytes32 orderId, address taker, uint fillAmount);
-
-    event MinToken0AmountUpdated(bytes32 pair, uint minToken0Amount);
-    event ExchangeRateDecimalsUpdated(bytes32 pair, uint exchangeRateDecimals);
+    event OrderCancelled(bytes32 orderId);
 
     /* -------------------------------------------------------------------------- */
     /*                                 Structures                                 */

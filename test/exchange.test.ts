@@ -3,6 +3,7 @@ import hre from 'hardhat';
 import { Contract } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { deploy } from '../scripts/deploy';
+import {BigNumber} from 'ethers';
 
 const ethers = hre.ethers;
 const web3 = require('web3');
@@ -64,7 +65,7 @@ describe('zexe', function () {
 			amount: ethers.utils.parseEther('1').toString(),
 			buy: false, // sell
             salt: '12345',
-            exchangeRate: (19100*100).toString(),
+            exchangeRate: ethers.utils.parseUnits('19100', 18).toString(),
 		};
 		orders.push(value);
 

@@ -11,7 +11,7 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1000,
+        runs: 200,
       },
       viaIR: true
     },
@@ -19,7 +19,7 @@ const config: HardhatUserConfig = {
   gasReporter: {
     enabled: process.env.GAS_REPORTER ? true : false,
     currency: 'USD',
-    gasPrice: 45,
+    gasPrice: 0.1,
     coinmarketcap: '54e57674-6e99-404b-8528-cbf6a9f1e471'
   },
   networks: {
@@ -30,11 +30,16 @@ const config: HardhatUserConfig = {
     harmonyTestnet: {
       url: `https://api.s0.b.hmny.io/`,
       accounts: [`0x${process.env.PRIVATE_KEY}`],
+    },
+    arbitrumGoerli: {
+      url: "https://arbitrum-goerli.infura.io/v3/bb621c9372d048979f8677ba78fe41d7",
+      accounts: [`0x${process.env.PRIVATE_KEY}`],
     }
   },
   etherscan: {
     apiKey: {
-      harmonyTest: process.env.ETHERSCAN_API_KEY!
+      harmonyTest: process.env.ETHERSCAN_API_KEY!,
+      arbitrumGoerli: process.env.ARBISCAN_API_KEY!,
     }
   }
 };

@@ -27,7 +27,6 @@ contract Exchange is IExchange, EIP712 {
 
     // pairHash => param
     mapping(bytes32 => uint) private _minToken0Amount;
-    mapping(bytes32 => uint) private _exchangeRateDecimals;
 
     // digest => filled amount
     mapping(bytes32 => uint) private _orderFills;
@@ -49,27 +48,26 @@ contract Exchange is IExchange, EIP712 {
         bytes memory signature,
         Order memory order,
         uint256 amountToFill
-    ) public returns (uint fillAmount) {
+    ) public returns (uint) {
         require(amountToFill > 0, "fillAmount must be greater than 0");
+        require(order.amount > 0, "order amount must be greater than 0");
+        require(order.exchangeRate > 0, "exchange rate must be greater than 0");
+        require(order.token0 != address(0), "token0 must be set");
+        require(order.token1 != address(0), "token1 must be set");
+        require(order.token0 != order.token1, "token0 and token1 must be different");
+        require(order.maker != address(0), "maker must be set");
+        // require(order.maker != msg.sender, "maker and taker must be different");
         
         // check signature
-        bytes32 orderId = verifyOrderHash(
-            signature,
-            order
-        );
+        bytes32 orderId = verifyOrderHash(signature, order);
 
         // Fill Amount
-        fillAmount = amountToFill.min(order.amount.sub(orderFills(orderId)));
-        _orderFills[orderId] = orderFills(orderId).add(fillAmount);
-
-        // Pair
-        uint pairExchangeRateDecimals = exchangeRateDecimals(
-            getPairHash(order.token0, order.token1)
-        );
-        // calulate token1 amount based on fillamount and exchange rate
-        uint256 token1Amount = fillAmount.mul(
-            uint256(order.exchangeRate).div(10**pairExchangeRateDecimals)
-        );
+        uint alreadyFilledAmount = _orderFills[orderId];
+        amountToFill = amountToFill.min(order.amount.sub(alreadyFilledAmount));
+        if(amountToFill == 0) {
+            return 0;
+        }
+        _orderFills[orderId] = alreadyFilledAmount.add(amountToFill);
 
         // set buyer and seller as if order is BUY
         address buyer = order.maker;
@@ -81,11 +79,13 @@ contract Exchange is IExchange, EIP712 {
             buyer = msg.sender;
         }
 
-        IERC20(order.token0).transferFrom(seller, buyer, fillAmount);
-        IERC20(order.token1).transferFrom(buyer, seller, token1Amount);
+        // calulate token1 amount based on fillamount and exchange rate
+        IERC20(order.token0).transferFrom(seller, buyer, amountToFill);
+        IERC20(order.token1).transferFrom(buyer, seller, amountToFill.mul(uint256(order.exchangeRate)).div(10**18));
 
-        _orderFills[orderId] = orderFills(orderId).add(fillAmount);
-        emit OrderExecuted(orderId, msg.sender, fillAmount);
+        _orderFills[orderId] = alreadyFilledAmount.add(amountToFill);
+        emit OrderExecuted(orderId, msg.sender, amountToFill);
+        return amountToFill;
     }
 
     function executeReverseLeverageOrder(
@@ -101,15 +101,12 @@ contract Exchange is IExchange, EIP712 {
         // verify order signature
         bytes32 digest = verifyLeverageOrderHash(signature, order);  
 
-        uint pairExchangeRateDecimals = exchangeRateDecimals(getPairHash(order.token0, order.token1));
-        uint pairMinToken0Amount = minToken0Amount(getPairHash(order.token0, order.token1));
-
         for (uint i = _loops[digest]; i < order.loops + 1; i++) {
             // limit: max amount of token0 this loop can fill
             uint thisLoopLimitFill = scaledByBorrowLimit(order.amount, order.borrowLimit, i);
             uint amountFillInThisLoop = amountToFill.min(thisLoopLimitFill - _loopFills[digest]);
             
-            console.log("loop %s executing %s of %s", i, amountFillInThisLoop, thisLoopLimitFill);
+            // console.log("loop %s executing %s of %s", i, amountFillInThisLoop, thisLoopLimitFill);
             
             /*** Transfer of tokens in this loop ***/
             // set buyer and seller as if order is BUY
@@ -124,7 +121,7 @@ contract Exchange is IExchange, EIP712 {
 
             // actual transfer
             IERC20(order.token0).transferFrom(seller, buyer, amountFillInThisLoop);
-            IERC20(order.token1).transferFrom(buyer, seller, amountFillInThisLoop.mul(order.exchangeRate).div(10**pairExchangeRateDecimals));
+            IERC20(order.token1).transferFrom(buyer, seller, amountFillInThisLoop.mul(order.exchangeRate).div(10**18));
 
             // state after transfer
             _loopFills[digest] += amountFillInThisLoop;
@@ -136,14 +133,14 @@ contract Exchange is IExchange, EIP712 {
                 // token 0: supply token0 -> borrow token1 -> swap token1 to token0 -> repeat
                 // SHORT token 0: supply token1 -> borrow token0 -> swap token0 to token1 -> repeat
                 LendingMarket supplyToken = ctoken1;
-                uint supplyAmount = nextLoopAmount.mul(order.exchangeRate).div(10**pairExchangeRateDecimals);
+                uint supplyAmount = nextLoopAmount.mul(order.exchangeRate).div(10**18);
                 LendingMarket borrowToken = ctoken0;
                 uint borrowAmount = nextLoopAmount;
                 if (order.long) {
                     supplyToken = ctoken0;
                     supplyAmount = nextLoopAmount;
                     borrowToken = ctoken1;
-                    borrowAmount = nextLoopAmount.mul(order.exchangeRate).div(10**pairExchangeRateDecimals);
+                    borrowAmount = nextLoopAmount.mul(order.exchangeRate).div(10**18);
                 }
                 // supply
                 supplyToken.mintFromExchange(order.maker, supplyAmount);
@@ -154,7 +151,7 @@ contract Exchange is IExchange, EIP712 {
                 _loopFills[digest] = 0;
             } 
             /** If no/min fill amount left */
-            if (amountToFill < pairMinToken0Amount) {
+            if (amountToFill == 0) {
                 break;
             }
         }
@@ -167,25 +164,26 @@ contract Exchange is IExchange, EIP712 {
         uint amountToFill
     ) external returns (uint) {
         
+        LendingMarket ctoken0 = _cassets[order.token0];
+        LendingMarket ctoken1 = _cassets[order.token1];
+
         // verify order signature
         bytes32 digest = verifyLeverageOrderHash(signature, order);  
 
-        uint pairExchangeRateDecimals = exchangeRateDecimals(getPairHash(order.token0, order.token1));
-
-        uint executionLoop = _loops[digest];
-        for(uint i = executionLoop; i < order.loops; i++){
+        for(uint i = _loops[digest]; i < order.loops; i++){
             uint thisLoopLimitFill = scaledByBorrowLimit(order.amount, order.borrowLimit, i+1);
-            if(_loopFills[digest] == 0){
+            uint thisLoopFill = _loopFills[digest];
+            if(thisLoopFill == 0){
                 // token 0: supply token0 -> borrow token1 -> swap token1 to token0 -> repeat
                 // SHORT token 0: supply token1 -> borrow token0 -> swap token0 to token1 -> repeat
-                LendingMarket supplyToken = _cassets[order.token0];
+                LendingMarket supplyToken = ctoken0;
                 uint supplyAmount = thisLoopLimitFill;
-                LendingMarket borrowToken = _cassets[order.token1];
-                uint borrowAmount = thisLoopLimitFill.mul(order.exchangeRate).div(10**pairExchangeRateDecimals);
+                LendingMarket borrowToken = ctoken1;
+                uint borrowAmount = thisLoopLimitFill.mul(order.exchangeRate).div(10**18);
                 if (!order.long) {
-                    supplyToken = _cassets[order.token1];
-                    supplyAmount = thisLoopLimitFill.mul(order.exchangeRate).div(10**pairExchangeRateDecimals);
-                    borrowToken = _cassets[order.token0];
+                    supplyToken = ctoken1;
+                    supplyAmount = thisLoopLimitFill.mul(order.exchangeRate).div(10**18);
+                    borrowToken = ctoken0;
                     borrowAmount = thisLoopLimitFill;
                 }
                 supplyAmount = supplyAmount.mul(1e6).div(order.borrowLimit);
@@ -195,7 +193,7 @@ contract Exchange is IExchange, EIP712 {
                 borrowToken.borrowFromExchange(order.maker, borrowAmount);
             }
             
-            uint amountToFillInThisLoop = amountToFill.min(thisLoopLimitFill - _loopFills[digest]);
+            uint amountToFillInThisLoop = amountToFill.min(thisLoopLimitFill - thisLoopFill);
 
             // console.log("loop %s executing %s of %s", _loops[digest], amountToFillInThisLoop, thisLoopLimitFill);
 
@@ -207,13 +205,12 @@ contract Exchange is IExchange, EIP712 {
                 order.maker,
                 msg.sender,
                 order.long,
-                order.exchangeRate,
-                pairExchangeRateDecimals
+                order.exchangeRate
             );
 
             _loopFills[digest] += amountToFillInThisLoop;
             amountToFill = amountToFill.sub(amountToFillInThisLoop);
-            if(_loopFills[digest] == thisLoopLimitFill){
+            if(thisLoopFill + amountToFillInThisLoop == thisLoopLimitFill){
                 _loops[digest] += 1;
                 _loopFills[digest] = 0;
             }
@@ -232,8 +229,7 @@ contract Exchange is IExchange, EIP712 {
         address maker, 
         address taker,
         bool long,
-        uint exchangeRate,
-        uint __exchangeRateDecimals
+        uint exchangeRate
     ) internal {
         // set buyer and seller as if order is BUY
         address buyer = maker;
@@ -246,13 +242,8 @@ contract Exchange is IExchange, EIP712 {
         }
 
         // actual transfer
-        // console.log("Transfering %s", ERC20(token0).symbol());
         IERC20(token0).transferFrom(seller, buyer, amount0);
-
-        // console.log("Transfering %s", ERC20(token1).symbol());
-        // console.log("Transfering %s from %s to %s", amount0.mul(exchangeRate).div(10**__exchangeRateDecimals), seller, buyer);
-
-        IERC20(token1).transferFrom(buyer, seller, amount0.mul(exchangeRate).div(10**__exchangeRateDecimals));
+        IERC20(token1).transferFrom(buyer, seller, amount0.mul(exchangeRate).div(10**18));
     }
 
     function cancelOrder(
@@ -265,30 +256,12 @@ contract Exchange is IExchange, EIP712 {
         );
 
         _orderFills[orderId] = order.amount;
+        emit OrderCancelled(orderId);
     }
 
     /* -------------------------------------------------------------------------- */
     /*                               Admin Functions                              */
     /* -------------------------------------------------------------------------- */
-    function updateMinToken0Amount(
-        address token0,
-        address token1,
-        uint256 __minToken0Amount
-    ) external onlyAdmin {
-        bytes32 pairHash = keccak256(abi.encodePacked(token0, token1));
-        _minToken0Amount[pairHash] = __minToken0Amount;
-        emit MinToken0AmountUpdated(pairHash, __minToken0Amount);
-    }
-
-    function updateExchangeRateDecimals(
-        address token0,
-        address token1,
-        uint256 __exchangeRateDecimals
-    ) external onlyAdmin {
-        bytes32 pairHash = keccak256(abi.encodePacked(token0, token1));
-        _exchangeRateDecimals[pairHash] = __exchangeRateDecimals;
-        emit ExchangeRateDecimalsUpdated(pairHash, __exchangeRateDecimals);
-    }
 
     function enableMarginTrading(address token, address cToken) external onlyAdmin {
         _cassets[token] = LendingMarket(cToken);
@@ -392,9 +365,9 @@ contract Exchange is IExchange, EIP712 {
         return _minToken0Amount[pair];
     }
 
-    function exchangeRateDecimals(bytes32 pair) public view returns (uint) {
-        return _exchangeRateDecimals[pair];
-    }
+    // function exchangeRateDecimals(bytes32 pair) public view returns (uint) {
+    //     return _exchangeRateDecimals[pair];
+    // }
 
     function orderFills(bytes32 digest) public view returns (uint) {
         return _orderFills[digest];
