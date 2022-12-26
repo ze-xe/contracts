@@ -4,6 +4,7 @@ pragma solidity ^0.8.10;
 import "./LendingMarket.sol";
 import "./PriceOracle.sol"; 
 import "../System.sol";
+import "../token/ZEXE.sol";
 
 contract UnitrollerAdminStorage {
     /**
@@ -37,6 +38,10 @@ contract LeverStorage is UnitrollerAdminStorage {
      * @notice Oracle which gives the price of any given asset
      */
     PriceOracle public oracle;
+    /**
+     * @notice zexe token address
+     */
+    ZEXE public zexe;
 
     /**
      * @notice Multiplier used to calculate the maximum repayAmount when liquidating a borrow
@@ -91,7 +96,6 @@ contract LeverStorage is UnitrollerAdminStorage {
     mapping(address => bool) public mintGuardianPaused;
     mapping(address => bool) public borrowGuardianPaused;
 
-
     /// @notice A list of all markets
     LendingMarket[] public allMarkets;
 
@@ -100,4 +104,38 @@ contract LeverStorage is UnitrollerAdminStorage {
 
     // @notice Borrow caps enforced by borrowAllowed for each cToken address. Defaults to zero which corresponds to unlimited borrowing.
     mapping(address => uint) public borrowCaps;
+
+    struct CompMarketState {
+        // The market's last updated compBorrowIndex or compSupplyIndex
+        uint224 index;
+
+        // The block number the index was last updated at
+        uint32 block;
+    }
+
+    /// @notice The COMP market supply state for each market
+    mapping(address => CompMarketState) public compSupplyState;
+
+    /// @notice The COMP market borrow state for each market
+    mapping(address => CompMarketState) public compBorrowState;
+
+    /// @notice The COMP borrow index for each market for each supplier as of the last time they accrued COMP
+    mapping(address => mapping(address => uint)) public compSupplierIndex;
+
+    /// @notice The COMP borrow index for each market for each borrower as of the last time they accrued COMP
+    mapping(address => mapping(address => uint)) public compBorrowerIndex;
+
+    /// @notice The COMP accrued but not yet transferred to each user
+    mapping(address => uint) public compAccrued;
+    /// @notice The rate at which comp is distributed to the corresponding borrow market (per block)
+    mapping(address => uint) public compBorrowSpeeds;
+
+    /// @notice The rate at which comp is distributed to the corresponding supply market (per block)
+    mapping(address => uint) public compSupplySpeeds;
+
+    /// @notice The portion of COMP that each contributor receives per block
+    mapping(address => uint) public compContributorSpeeds;
+
+    /// @notice Last block at which a contributor's COMP rewards have been allocated
+    mapping(address => uint) public lastContributorBlock;
 }

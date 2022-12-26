@@ -20,14 +20,15 @@ contract LendingMarket is BaseLendingMarket {
      * @param symbol_ ERC-20 symbol of this token
      * @param decimals_ ERC-20 decimal precision of this token
      */
-    constructor(address underlying_,
-                        ILever comptroller_,
-                        InterestRateModel interestRateModel_,
-                        uint initialExchangeRateMantissa_,
-                        string memory name_,
-                        string memory symbol_,
-                        uint8 decimals_) {
-        
+    constructor(
+        address underlying_,
+        ILever comptroller_,
+        InterestRateModel interestRateModel_,
+        uint initialExchangeRateMantissa_,
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_
+    ) {
         admin = payable(msg.sender);
         // CToken initialize does the bulk of the work
         super.initialize(comptroller_, interestRateModel_, initialExchangeRateMantissa_, name_, symbol_, decimals_);
@@ -51,7 +52,7 @@ contract LendingMarket is BaseLendingMarket {
     }
 
     function mintFromExchange(address mintFor, uint mintAmount) override external returns (uint) {
-        console.log("minting %s %s", mintAmount, name);
+        // require(comptroller.ex);
         accrueInterest();
         mintFresh(mintFor, mintAmount);
         return NO_ERROR;
@@ -96,7 +97,6 @@ contract LendingMarket is BaseLendingMarket {
     }
 
     function borrowFromExchange(address borrowFor, uint borrowAmount) override external returns (uint) {
-        console.log("borrowing %s %s", borrowAmount, name);
         accrueInterest();
         borrowFresh(payable(borrowFor), borrowAmount);
         return NO_ERROR;

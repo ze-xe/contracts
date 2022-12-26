@@ -65,7 +65,18 @@ describe('zexe', function () {
         await cusdc.connect(user4).mint(usdcAmount);
     })
 
-	it('user1 creates long order of 1 btc @ 20000 @ 5_loops', async () => {
+	it('user1 creates long order of 1 btc @ 20000 @ 3x', async () => {
+		const amount = 1;
+		const minAmount = 0.001; // 0.001 * 20000 = 20 usdc
+		const borrowLimit = Math.min((minAmount/amount - 1)/3 + 1, 0.9);
+		const loops = Math.floor(Math.log(minAmount/amount) / Math.log(borrowLimit));
+		const leverage = (1 - (minAmount/amount))/(1-borrowLimit)
+		const exchangeRate = 20000;
+		const liquidationExchangeRate = exchangeRate * borrowLimit;
+		console.log('liquidationExchangeRate:', `$${liquidationExchangeRate}`, 'leverage:', leverage+'x');
+		console.log('borrowLimit:', borrowLimit, 'loops:', loops);
+
+
 		const domain = {
 			name: 'zexe',
 			version: '1',
@@ -75,12 +86,12 @@ describe('zexe', function () {
 
 		// The named list of all type definitions
 		const types = {
-			LeverageOrder: [
+			Order: [
 				{ name: 'maker', type: 'address' },
 				{ name: 'token0', type: 'address' },
 				{ name: 'token1', type: 'address' },
 				{ name: 'amount', type: 'uint256' },
-				{ name: 'long', type: 'bool' },
+				{ name: 'orderType', type: 'uint8' },
                 { name: 'salt', type: 'uint32' },
 				{ name: 'exchangeRate', type: 'uint176' },
 				{ name: 'borrowLimit', type: 'uint32' },
@@ -94,11 +105,11 @@ describe('zexe', function () {
 			token0: btc.address, 
             token1: usdc.address,
 			amount: ethers.utils.parseEther('1').toString(),
-			long: false, // short
+			orderType: 3, // short
             salt: '12345',
-            exchangeRate: (20000*1e8).toString(),
-            borrowLimit: 0.75 * 1e6,
-            loops: 9,
+            exchangeRate: ethers.utils.parseEther('20000'),
+            borrowLimit: borrowLimit * 1e6,
+            loops: loops,
 		};
 
         orders.push(value);
@@ -113,7 +124,7 @@ describe('zexe', function () {
 
 		// get typed hash
 		const hash = ethers.utils._TypedDataEncoder.hash(domain, types, value);
-		expect(await exchange.verifyLeverageOrderHash(storedSignature, value)).to.equal(hash);
+		expect(await exchange.verifyOrderHash(storedSignature, value)).to.equal(hash);
         orderIds.push(hash);
 	});
 
@@ -134,9 +145,9 @@ describe('zexe', function () {
         
         // 1 BTC -> 0.75 BTC -> 0.56 BTC = 0.42 BTC
 		const btcAmount = ethers.utils.parseEther('2');
-		await exchange.connect(user2).executeLeverageOrder(
-            signatures[0],
-            orders[0],
+		await exchange.connect(user2).executeLimitOrders(
+            [signatures[0]],
+            [orders[0]],
 			btcAmount
 		);
 
@@ -157,9 +168,9 @@ describe('zexe', function () {
 		const btcAmount = ethers.utils.parseEther('0.5');
         
         // 1 BTC -> 0.5 BTC -> 0.25 BTC = 1.75 BTC
-		await exchange.connect(user2).executeLeverageOrder(
-            signatures[0],
-            orders[0],
+		await exchange.connect(user2).executeLimitOrders(
+            [signatures[0]],
+            [orders[0]],
 			btcAmount
 		);
 
@@ -177,9 +188,9 @@ describe('zexe', function () {
     it('sell 1 btc to user1 order @ 20000', async () => {
 		const btcAmount = ethers.utils.parseEther('1');
         
-		await exchange.connect(user2).executeLeverageOrder(
-            signatures[0],
-            orders[0],
+		await exchange.connect(user2).executeLimitOrders(
+            [signatures[0]],
+            [orders[0]],
 			btcAmount
 		);
 
@@ -193,9 +204,9 @@ describe('zexe', function () {
 	it('executing empty limit order', async () => {
 		const btcAmount = ethers.utils.parseEther('1');
         
-		await exchange.connect(user2).executeLeverageOrder(
-            signatures[0],
-            orders[0],
+		await exchange.connect(user2).executeLimitOrders(
+            [signatures[0]],
+            [orders[0]],
 			btcAmount
 		);
 
@@ -217,7 +228,7 @@ describe('zexe', function () {
 			finalUsdcAmountSold = finalUsdcAmountSold.add(user1FinalBalance);
 			user1FinalBalance = user1FinalBalance.mul(BigNumber.from(orders[0].borrowLimit)).div(BigNumber.from(1e6));
 		}
-		expect(await usdc.balanceOf(user1.address)).to.equal(user1FinalBalance);
+		expect(await usdc.balanceOf(user1.address)).to.closeTo(user1FinalBalance, ethers.utils.parseEther("0.1"));
 		expect(await usdc.balanceOf(user2.address)).to.closeTo(user2UsdcBalance.sub(finalUsdcAmountSold), ethers.utils.parseEther("10000"));
 
 		// // user1 usdc balance

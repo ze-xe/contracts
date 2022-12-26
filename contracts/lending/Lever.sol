@@ -10,6 +10,7 @@ import "./LeverStorage.sol";
 import "./Unitroller.sol"; 
 import "./ExponentialNoError.sol";
 
+
 /**
  * @title Compound's Comptroller Contract
  * @author Compound
@@ -45,11 +46,38 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
     /// @notice Emitted when an action is paused on a market
     event ActionPaused(LendingMarket cToken, string action, bool pauseState);
 
+    /// @notice Emitted when a new borrow-side COMP speed is calculated for a market
+    event CompBorrowSpeedUpdated(LendingMarket indexed cToken, uint newSpeed);
+
+    /// @notice Emitted when a new supply-side COMP speed is calculated for a market
+    event CompSupplySpeedUpdated(LendingMarket indexed cToken, uint newSpeed);
+
+    /// @notice Emitted when a new COMP speed is set for a contributor
+    event ContributorCompSpeedUpdated(address indexed contributor, uint newSpeed);
+
+    /// @notice Emitted when COMP is distributed to a supplier
+    event DistributedSupplierComp(LendingMarket indexed cToken, address indexed supplier, uint compDelta, uint compSupplyIndex);
+
+    /// @notice Emitted when COMP is distributed to a borrower
+    event DistributedBorrowerComp(LendingMarket indexed cToken, address indexed borrower, uint compDelta, uint compBorrowIndex);
+
     /// @notice Emitted when borrow cap for a cToken is changed
     event NewBorrowCap(LendingMarket indexed cToken, uint newBorrowCap);
 
     /// @notice Emitted when borrow cap guardian is changed
     event NewBorrowCapGuardian(address oldBorrowCapGuardian, address newBorrowCapGuardian);
+
+    /// @notice Emitted when COMP is granted by admin
+    event CompGranted(address recipient, uint amount);
+
+    /// @notice Emitted when COMP accrued for a user has been manually adjusted.
+    event CompAccruedAdjusted(address indexed user, uint oldCompAccrued, uint newCompAccrued);
+
+    /// @notice Emitted when COMP receivable for a user has been updated.
+    event CompReceivableUpdated(address indexed user, uint oldCompReceivable, uint newCompReceivable);
+
+    /// @notice The initial COMP index for a market
+    uint224 public constant compInitialIndex = 1e36;
 
     // closeFactorMantissa must be strictly greater than this value
     uint internal constant closeFactorMinMantissa = 0.05e18; // 0.05
@@ -60,9 +88,10 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
     // No collateralFactorMantissa may exceed this value
     uint internal constant collateralFactorMaxMantissa = 0.90e18; // 0.95
 
-    constructor(System __system) {
+    constructor(System __system, ZEXE _zexe) {
         admin = msg.sender; 
         _system = __system;
+        zexe = _zexe;
     }
 
     function system() public view returns (System) {
@@ -210,7 +239,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param mintAmount The amount of underlying being supplied to the market in exchange for tokens
      * @return 0 if the mint is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
-    function mintAllowed(address cToken, address minter, uint mintAmount) override external view returns (uint) {
+    function mintAllowed(address cToken, address minter, uint mintAmount) override external returns (uint) {
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!mintGuardianPaused[cToken], "mint is paused");
 
@@ -221,6 +250,10 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         if (!markets[cToken].isListed) {
             return uint(Error.MARKET_NOT_LISTED);
         }
+
+        // Keep the flywheel moving
+        updateCompSupplyIndex(cToken);
+        distributeSupplierComp(cToken, minter);
 
         return uint(Error.NO_ERROR);
     }
@@ -252,11 +285,15 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param redeemTokens The number of cTokens to exchange for the underlying asset in the market
      * @return 0 if the redeem is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
-    function redeemAllowed(address cToken, address redeemer, uint redeemTokens) override external view returns (uint) {
+    function redeemAllowed(address cToken, address redeemer, uint redeemTokens) override external returns (uint) {
         uint allowed = redeemAllowedInternal(cToken, redeemer, redeemTokens);
-        if (allowed != uint(Error.NO_ERROR)) {
+        if (allowed != uint(Error.NO_ERROR)) { 
             return allowed;
         }
+
+        // Keep the flywheel moving
+        updateCompSupplyIndex(cToken);
+        distributeSupplierComp(cToken, redeemer);
 
         return uint(Error.NO_ERROR);
     }
@@ -321,9 +358,9 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
             require(msg.sender == cToken, "sender must be cToken");
 
             // attempt to add borrower to the market
-            Error _err = addToMarketInternal(LendingMarket(msg.sender), borrower);
-            if (_err != Error.NO_ERROR) {
-                return uint(_err);
+            Error err = addToMarketInternal(LendingMarket(msg.sender), borrower);
+            if (err != Error.NO_ERROR) {
+                return uint(err);
             }
 
             // it should be impossible to break the important invariant
@@ -334,6 +371,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
             return uint(Error.PRICE_ERROR);
         }
 
+
         uint borrowCap = borrowCaps[cToken];
         // Borrow cap of 0 corresponds to unlimited borrowing
         if (borrowCap != 0) {
@@ -342,7 +380,6 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
             require(nextTotalBorrows < borrowCap, "market borrow cap reached");
         }
 
-
         (Error err, , uint shortfall) = getHypotheticalAccountLiquidityInternal(borrower, LendingMarket(cToken), 0, borrowAmount);
         if (err != Error.NO_ERROR) {
             return uint(err);
@@ -350,6 +387,11 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         if (shortfall > 0) {
             return uint(Error.INSUFFICIENT_LIQUIDITY);
         }
+
+        // Keep the flywheel moving
+        Exp memory borrowIndex = Exp({mantissa: LendingMarket(cToken).borrowIndex()});
+        updateCompBorrowIndex(cToken, borrowIndex);
+        distributeBorrowerComp(cToken, borrower, borrowIndex);
 
         return uint(Error.NO_ERROR);
     }
@@ -384,15 +426,20 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         address cToken,
         address payer,
         address borrower,
-        uint repayAmount) override external view returns (uint) {
+        uint repayAmount) override external returns (uint) {
         // Shh - currently unused
         payer;
         borrower;
         repayAmount;
 
         if (!markets[cToken].isListed) {
-            return uint(Error.MARKET_NOT_LISTED);
+            return uint(Error.MARKET_NOT_LISTED); 
         }
+
+        // Keep the flywheel moving
+        Exp memory borrowIndex = Exp({mantissa: LendingMarket(cToken).borrowIndex()});
+        updateCompBorrowIndex(cToken, borrowIndex);
+        distributeBorrowerComp(cToken, borrower, borrowIndex);
 
         return uint(Error.NO_ERROR);
     }
@@ -511,8 +558,8 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         address cTokenBorrowed,
         address liquidator,
         address borrower,
-        uint seizeTokens) override external view returns (uint) {
-        // Pausing is a very serious situation - we revert to sound the alarms
+        uint seizeTokens) override external returns (uint) {
+        /// Pausing is a very serious situation - we revert to sound the alarms
         require(!seizeGuardianPaused, "seize is paused");
 
         // Shh - currently unused
@@ -525,6 +572,11 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         if (LendingMarket(cTokenCollateral).comptroller() != LendingMarket(cTokenBorrowed).comptroller()) {
             return uint(Error.COMPTROLLER_MISMATCH);
         }
+
+        // Keep the flywheel moving
+        updateCompSupplyIndex(cTokenCollateral);
+        distributeSupplierComp(cTokenCollateral, borrower);
+        distributeSupplierComp(cTokenCollateral, liquidator);
 
         return uint(Error.NO_ERROR);
     }
@@ -564,7 +616,7 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param transferTokens The number of cTokens to transfer
      * @return 0 if the transfer is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
-    function transferAllowed(address cToken, address src, address dst, uint transferTokens) override external view returns (uint) {
+    function transferAllowed(address cToken, address src, address dst, uint transferTokens) override external returns (uint) {
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!transferGuardianPaused, "transfer is paused");
 
@@ -574,6 +626,11 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         if (allowed != uint(Error.NO_ERROR)) {
             return allowed;
         }
+
+        // Keep the flywheel moving
+        updateCompSupplyIndex(cToken);
+        distributeSupplierComp(cToken, src);
+        distributeSupplierComp(cToken, dst);
 
         return uint(Error.NO_ERROR);
     } 
@@ -1023,6 +1080,317 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         return msg.sender == admin || msg.sender == comptrollerImplementation;
     }
 
+
+    /**
+     * @notice Set COMP speed for a single market
+     * @param cToken The market whose COMP speed to update
+     * @param supplySpeed New supply-side COMP speed for market
+     * @param borrowSpeed New borrow-side COMP speed for market
+     */
+    function setCompSpeedInternal(LendingMarket cToken, uint supplySpeed, uint borrowSpeed) internal {
+        Market storage market = markets[address(cToken)];
+        require(market.isListed, "comp market is not listed");
+
+        if (compSupplySpeeds[address(cToken)] != supplySpeed) {
+            // Supply speed updated so let's update supply state to ensure that
+            //  1. COMP accrued properly for the old speed, and
+            //  2. COMP accrued at the new speed starts after this block.
+            updateCompSupplyIndex(address(cToken));
+
+            // Update speed and emit event
+            compSupplySpeeds[address(cToken)] = supplySpeed;
+            emit CompSupplySpeedUpdated(cToken, supplySpeed);
+        }
+
+        if (compBorrowSpeeds[address(cToken)] != borrowSpeed) {
+            // Borrow speed updated so let's update borrow state to ensure that
+            //  1. COMP accrued properly for the old speed, and
+            //  2. COMP accrued at the new speed starts after this block.
+            Exp memory borrowIndex = Exp({mantissa: cToken.borrowIndex()});
+            updateCompBorrowIndex(address(cToken), borrowIndex);
+
+            // Update speed and emit event
+            compBorrowSpeeds[address(cToken)] = borrowSpeed;
+            emit CompBorrowSpeedUpdated(cToken, borrowSpeed);
+        }
+    }
+
+    /**
+     * @notice Accrue COMP to the market by updating the supply index
+     * @param cToken The market whose supply index to update
+     * @dev Index is a cumulative sum of the COMP per cToken accrued.
+     */
+    function updateCompSupplyIndex(address cToken) internal {
+        CompMarketState storage supplyState = compSupplyState[cToken];
+        uint supplySpeed = compSupplySpeeds[cToken];
+        uint32 blockNumber = safe32(getBlockNumber(), "block number exceeds 32 bits");
+        uint deltaBlocks = sub_(uint(blockNumber), uint(supplyState.block));
+        if (deltaBlocks > 0 && supplySpeed > 0) {
+            uint supplyTokens = LendingMarket(cToken).totalSupply();
+            uint compAccrued = mul_(deltaBlocks, supplySpeed);
+            Double memory ratio = supplyTokens > 0 ? fraction(compAccrued, supplyTokens) : Double({mantissa: 0});
+            supplyState.index = safe224(add_(Double({mantissa: supplyState.index}), ratio).mantissa, "new index exceeds 224 bits");
+            supplyState.block = blockNumber;
+        } else if (deltaBlocks > 0) {
+            supplyState.block = blockNumber;
+        }
+    }
+
+    /**
+     * @notice Accrue COMP to the market by updating the borrow index
+     * @param cToken The market whose borrow index to update
+     * @dev Index is a cumulative sum of the COMP per cToken accrued.
+     */
+    function updateCompBorrowIndex(address cToken, Exp memory marketBorrowIndex) internal {
+        CompMarketState storage borrowState = compBorrowState[cToken];
+        uint borrowSpeed = compBorrowSpeeds[cToken];
+        uint32 blockNumber = safe32(getBlockNumber(), "block number exceeds 32 bits");
+        uint deltaBlocks = sub_(uint(blockNumber), uint(borrowState.block));
+        if (deltaBlocks > 0 && borrowSpeed > 0) {
+            uint borrowAmount = div_(LendingMarket(cToken).totalBorrows(), marketBorrowIndex);
+            uint compAccrued = mul_(deltaBlocks, borrowSpeed);
+            Double memory ratio = borrowAmount > 0 ? fraction(compAccrued, borrowAmount) : Double({mantissa: 0});
+            borrowState.index = safe224(add_(Double({mantissa: borrowState.index}), ratio).mantissa, "new index exceeds 224 bits");
+            borrowState.block = blockNumber;
+        } else if (deltaBlocks > 0) {
+            borrowState.block = blockNumber;
+        }
+    }
+
+    /**
+     * @notice Calculate COMP accrued by a supplier and possibly transfer it to them
+     * @param cToken The market in which the supplier is interacting
+     * @param supplier The address of the supplier to distribute COMP to
+     */
+    function distributeSupplierComp(address cToken, address supplier) internal {
+        // TODO: Don't distribute supplier COMP if the user is not in the supplier market.
+        // This check should be as gas efficient as possible as distributeSupplierComp is called in many places.
+        // - We really don't want to call an external contract as that's quite expensive.
+
+        CompMarketState storage supplyState = compSupplyState[cToken];
+        uint supplyIndex = supplyState.index;
+        uint supplierIndex = compSupplierIndex[cToken][supplier];
+
+        // Update supplier's index to the current index since we are distributing accrued COMP
+        compSupplierIndex[cToken][supplier] = supplyIndex;
+
+        if (supplierIndex == 0 && supplyIndex >= compInitialIndex) {
+            // Covers the case where users supplied tokens before the market's supply state index was set.
+            // Rewards the user with COMP accrued from the start of when supplier rewards were first
+            // set for the market.
+            supplierIndex = compInitialIndex;
+        }
+
+        // Calculate change in the cumulative sum of the COMP per cToken accrued
+        Double memory deltaIndex = Double({mantissa: sub_(supplyIndex, supplierIndex)});
+
+        uint supplierTokens = LendingMarket(cToken).balanceOf(supplier);
+
+        // Calculate COMP accrued: cTokenAmount * accruedPerCToken
+        uint supplierDelta = mul_(supplierTokens, deltaIndex);
+
+        uint supplierAccrued = add_(compAccrued[supplier], supplierDelta);
+        compAccrued[supplier] = supplierAccrued;
+
+        emit DistributedSupplierComp(LendingMarket(cToken), supplier, supplierDelta, supplyIndex);
+    }
+
+    /**
+     * @notice Calculate COMP accrued by a borrower and possibly transfer it to them
+     * @dev Borrowers will not begin to accrue until after the first interaction with the protocol.
+     * @param cToken The market in which the borrower is interacting
+     * @param borrower The address of the borrower to distribute COMP to
+     */
+    function distributeBorrowerComp(address cToken, address borrower, Exp memory marketBorrowIndex) internal {
+        // TODO: Don't distribute supplier COMP if the user is not in the borrower market.
+        // This check should be as gas efficient as possible as distributeBorrowerComp is called in many places.
+        // - We really don't want to call an external contract as that's quite expensive.
+
+        CompMarketState storage borrowState = compBorrowState[cToken];
+        uint borrowIndex = borrowState.index;
+        uint borrowerIndex = compBorrowerIndex[cToken][borrower];
+
+        // Update borrowers's index to the current index since we are distributing accrued COMP
+        compBorrowerIndex[cToken][borrower] = borrowIndex;
+
+        if (borrowerIndex == 0 && borrowIndex >= compInitialIndex) {
+            // Covers the case where users borrowed tokens before the market's borrow state index was set.
+            // Rewards the user with COMP accrued from the start of when borrower rewards were first
+            // set for the market.
+            borrowerIndex = compInitialIndex;
+        }
+
+        // Calculate change in the cumulative sum of the COMP per borrowed unit accrued
+        Double memory deltaIndex = Double({mantissa: sub_(borrowIndex, borrowerIndex)});
+
+        uint borrowerAmount = div_(LendingMarket(cToken).borrowBalanceStored(borrower), marketBorrowIndex);
+
+        // Calculate COMP accrued: cTokenAmount * accruedPerBorrowedUnit
+        uint borrowerDelta = mul_(borrowerAmount, deltaIndex);
+
+        uint borrowerAccrued = add_(compAccrued[borrower], borrowerDelta);
+        compAccrued[borrower] = borrowerAccrued;
+
+        emit DistributedBorrowerComp(LendingMarket(cToken), borrower, borrowerDelta, borrowIndex);
+    }
+
+    /**
+     * @notice Calculate additional accrued COMP for a contributor since last accrual
+     * @param contributor The address to calculate contributor rewards for
+     */
+    function updateContributorRewards(address contributor) public {
+        uint compSpeed = compContributorSpeeds[contributor];
+        uint blockNumber = getBlockNumber();
+        uint deltaBlocks = sub_(blockNumber, lastContributorBlock[contributor]);
+        if (deltaBlocks > 0 && compSpeed > 0) {
+            uint newAccrued = mul_(deltaBlocks, compSpeed);
+            uint contributorAccrued = add_(compAccrued[contributor], newAccrued);
+
+            compAccrued[contributor] = contributorAccrued;
+            lastContributorBlock[contributor] = blockNumber;
+        }
+    }
+
+    /**
+     * @notice Claim all the comp accrued by holder in all markets
+     * @param holder The address to claim COMP for
+     */
+    function claimComp(address holder) public {
+        return claimComp(holder, allMarkets);
+    }
+
+    /**
+     * @notice Claim all the comp accrued by holder in the specified markets
+     * @param holder The address to claim COMP for
+     * @param cTokens The list of markets to claim COMP in
+     */
+    function claimComp(address holder, LendingMarket[] memory cTokens) public {
+        address[] memory holders = new address[](1);
+        holders[0] = holder;
+        claimComp(holders, cTokens, true, true);
+    }
+
+    /**
+     * @notice Claim all comp accrued by the holders
+     * @param holders The addresses to claim COMP for
+     * @param cTokens The list of markets to claim COMP in
+     * @param borrowers Whether or not to claim COMP earned by borrowing
+     * @param suppliers Whether or not to claim COMP earned by supplying
+     */
+    function claimComp(address[] memory holders, LendingMarket[] memory cTokens, bool borrowers, bool suppliers) public {
+        for (uint i = 0; i < cTokens.length; i++) {
+            LendingMarket cToken = cTokens[i];
+            require(markets[address(cToken)].isListed, "market must be listed");
+            if (borrowers == true) {
+                Exp memory borrowIndex = Exp({mantissa: cToken.borrowIndex()});
+                updateCompBorrowIndex(address(cToken), borrowIndex);
+                for (uint j = 0; j < holders.length; j++) {
+                    distributeBorrowerComp(address(cToken), holders[j], borrowIndex);
+                }
+            }
+            if (suppliers == true) {
+                updateCompSupplyIndex(address(cToken));
+                for (uint j = 0; j < holders.length; j++) {
+                    distributeSupplierComp(address(cToken), holders[j]);
+                }
+            }
+        }
+        for (uint j = 0; j < holders.length; j++) {
+            compAccrued[holders[j]] = grantCompInternal(holders[j], compAccrued[holders[j]]);
+        }
+    }
+
+    /**
+     * @notice Transfer COMP to the user
+     * @dev Note: If there is not enough COMP, we do not perform the transfer all.
+     * @param user The address of the user to transfer COMP to
+     * @param amount The amount of COMP to (possibly) transfer
+     * @return The amount of COMP which was NOT transferred to the user
+     */
+    function grantCompInternal(address user, uint amount) internal returns (uint) {
+        ZEXE comp = zexe;
+        uint compRemaining = comp.balanceOf(address(this));
+        if (amount > 0 && amount <= compRemaining) {
+            comp.transfer(user, amount);
+            return 0;
+        }
+        return amount;
+    }
+
+    /*** Comp Distribution Admin ***/
+
+    /**
+     * @notice Transfer COMP to the recipient
+     * @dev Note: If there is not enough COMP, we do not perform the transfer all.
+     * @param recipient The address of the recipient to transfer COMP to
+     * @param amount The amount of COMP to (possibly) transfer
+     */
+    function _grantComp(address recipient, uint amount) public {
+        require(adminOrInitializing(), "only admin can grant comp");
+        uint amountLeft = grantCompInternal(recipient, amount);
+        require(amountLeft == 0, "insufficient comp for grant");
+        emit CompGranted(recipient, amount);
+    }
+
+    /**
+     * @notice Set COMP borrow and supply speeds for the specified markets.
+     * @param cTokens The markets whose COMP speed to update.
+     * @param supplySpeeds New supply-side COMP speed for the corresponding market.
+     * @param borrowSpeeds New borrow-side COMP speed for the corresponding market.
+     */
+    function _setCompSpeeds(LendingMarket[] memory cTokens, uint[] memory supplySpeeds, uint[] memory borrowSpeeds) public {
+        require(adminOrInitializing(), "only admin can set comp speed");
+
+        uint numTokens = cTokens.length;
+        require(numTokens == supplySpeeds.length && numTokens == borrowSpeeds.length, "Comptroller::_setCompSpeeds invalid input");
+
+        for (uint i = 0; i < numTokens; ++i) {
+            setCompSpeedInternal(cTokens[i], supplySpeeds[i], borrowSpeeds[i]);
+        }
+    }
+
+    /**
+     * @notice Set COMP speed for a single contributor
+     * @param contributor The contributor whose COMP speed to update
+     * @param compSpeed New COMP speed for contributor
+     */
+    function _setContributorCompSpeed(address contributor, uint compSpeed) public {
+        require(adminOrInitializing(), "only admin can set comp speed");
+
+        // note that COMP speed could be set to 0 to halt liquidity rewards for a contributor
+        updateContributorRewards(contributor);
+        if (compSpeed == 0) {
+            // release storage
+            delete lastContributorBlock[contributor];
+        } else {
+            lastContributorBlock[contributor] = getBlockNumber();
+        }
+        compContributorSpeeds[contributor] = compSpeed;
+
+        emit ContributorCompSpeedUpdated(contributor, compSpeed);
+    }
+
+    function getRewardBalance(address[] memory holders, bool borrowers, bool suppliers) public returns (uint totalCompAccrued) {
+        for (uint i = 0; i < allMarkets.length; i++) {
+            LendingMarket cToken = allMarkets[i];
+            if (borrowers == true) {
+                Exp memory borrowIndex = Exp({mantissa: cToken.borrowIndex()});
+                updateCompBorrowIndex(address(cToken), borrowIndex);
+                for (uint j = 0; j < holders.length; j++) {
+                    distributeBorrowerComp(address(cToken), holders[j], borrowIndex);
+                }
+            }
+            if (suppliers == true) {
+                updateCompSupplyIndex(address(cToken));
+                for (uint j = 0; j < holders.length; j++) {
+                    distributeSupplierComp(address(cToken), holders[j]);
+                }
+            }
+        }
+        for (uint j = 0; j < holders.length; j++) {
+            totalCompAccrued += compAccrued[holders[j]];
+        }
+    }
 
     /**
      * @notice Return all of the markets

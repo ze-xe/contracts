@@ -32,8 +32,9 @@ const config: HardhatUserConfig = {
       accounts: [`0x${process.env.PRIVATE_KEY}`],
     },
     arbitrumGoerli: {
-      url: "https://arbitrum-goerli.infura.io/v3/bb621c9372d048979f8677ba78fe41d7",
+      url: "https://arb-goerli.g.alchemy.com/v2/HyNaane88yHFsK8Yrn4gf2OOzHkd6GAJ",
       accounts: [`0x${process.env.PRIVATE_KEY}`],
+      gasPrice: 1600000000
     }
   },
   etherscan: {
