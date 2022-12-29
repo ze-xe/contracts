@@ -368,9 +368,9 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
             require(msg.sender == cToken, "sender must be cToken");
 
             // attempt to add borrower to the market
-            Error err = addToMarketInternal(LendingMarket(msg.sender), borrower);
-            if (err != Error.NO_ERROR) {
-                return uint(err);
+            Error _err = addToMarketInternal(LendingMarket(msg.sender), borrower);
+            if (_err != Error.NO_ERROR) {
+                return uint(_err);
             }
 
             // it should be impossible to break the important invariant

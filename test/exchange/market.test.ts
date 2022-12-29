@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
 import { Contract } from 'ethers';
-import { deploy } from '../scripts/test';
+import { deploy } from '../../scripts/test';
 
 const ethers = hre.ethers;
 const web3 = require('web3');
 const toWei = (x: { toString: () => any }) => web3.utils.toWei(x.toString());
 
-describe('market orders', function () {
+describe('exchange:market', function () {
 	let usdt: Contract, btc: Contract, exchange: Contract, vault: Contract;
 	let owner: any, user1: any, user2: any, user3, user4, user5, user6;
 	let orderIds: string[] = [];
