@@ -31,22 +31,32 @@ interface IExchange {
         uint256 minToken1Order
     );
 
-    event OrderExecuted(bytes32 orderId, address taker, uint fillAmount);
+    event MarginEnabled(address token, address cToken);
 
-    event MinToken0AmountUpdated(bytes32 pair, uint minToken0Amount);
-    event ExchangeRateDecimalsUpdated(bytes32 pair, uint exchangeRateDecimals);
+    event OrderExecuted(bytes32 orderId, address taker, uint fillAmount);
+    event OrderCancelled(bytes32 orderId);
 
     /* -------------------------------------------------------------------------- */
     /*                                 Structures                                 */
     /* -------------------------------------------------------------------------- */
+
+    enum OrderType {
+        BUY,
+        SELL,
+        LONG,
+        SHORT
+    }
+
     struct Order {
         address maker;
         address token0;
         address token1;
         uint256 amount;
-        bool buy;
+        OrderType orderType;
         uint32 salt;
-        uint216 exchangeRate;
+        uint176 exchangeRate;
+        uint32 borrowLimit;
+        uint8 loops;
     }
 
     struct Pair {
