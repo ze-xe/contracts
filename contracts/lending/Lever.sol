@@ -9,6 +9,7 @@ import "./interfaces/ILever.sol";
 import "./LeverStorage.sol";
 import "./Unitroller.sol"; 
 import "./ExponentialNoError.sol";
+import "../Exchange.sol";
 
 
 /**
@@ -88,14 +89,14 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
     // No collateralFactorMantissa may exceed this value
     uint internal constant collateralFactorMaxMantissa = 0.90e18; // 0.95
 
-    constructor(System __system, ZEXE _zexe) {
+    constructor(address exchangeAddress, ZEXE _zexe) {
         admin = msg.sender; 
-        _system = __system;
+        _exchange = exchangeAddress;
         zexe = _zexe;
     }
 
-    function system() public view returns (System) {
-        return _system;
+    function exchange() external view override returns (address) {
+        return _exchange;
     }
 
     /*** Assets You Are In ***/
@@ -239,7 +240,10 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param mintAmount The amount of underlying being supplied to the market in exchange for tokens
      * @return 0 if the mint is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
-    function mintAllowed(address cToken, address minter, uint mintAmount) override external returns (uint) {
+    function mintAllowed(address cToken, address minter, address caller, uint mintAmount) override external returns (uint) {
+        if(caller != _exchange) {
+            return uint(Error.UNAUTHORIZED);
+        }
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!mintGuardianPaused[cToken], "mint is paused");
 
@@ -285,7 +289,10 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param redeemTokens The number of cTokens to exchange for the underlying asset in the market
      * @return 0 if the redeem is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
-    function redeemAllowed(address cToken, address redeemer, uint redeemTokens) override external returns (uint) {
+    function redeemAllowed(address cToken, address redeemer, address caller, uint redeemTokens) override external returns (uint) {
+        if(caller != _exchange) {
+            return uint(Error.UNAUTHORIZED);
+        }
         uint allowed = redeemAllowedInternal(cToken, redeemer, redeemTokens);
         if (allowed != uint(Error.NO_ERROR)) { 
             return allowed;
@@ -345,7 +352,10 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
      * @param borrowAmount The amount of underlying the account would borrow
      * @return 0 if the borrow is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
-    function borrowAllowed(address cToken, address borrower, uint borrowAmount) override external returns (uint) {
+    function borrowAllowed(address cToken, address borrower, address caller, uint borrowAmount) override external returns (uint) {
+        if(caller != _exchange) {
+            return uint(Error.UNAUTHORIZED);
+        }
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!borrowGuardianPaused[cToken], "borrow is paused");
 
@@ -426,7 +436,11 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         address cToken,
         address payer,
         address borrower,
+        address caller,
         uint repayAmount) override external returns (uint) {
+        if(caller != _exchange) {
+            return uint(Error.UNAUTHORIZED);
+        }
         // Shh - currently unused
         payer;
         borrower;
@@ -483,7 +497,11 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         address cTokenCollateral,
         address liquidator,
         address borrower,
+        address caller,
         uint repayAmount) override external view returns (uint) {
+        if(caller != _exchange) {
+            return uint(Error.UNAUTHORIZED);
+        }
         // Shh - currently unused
         liquidator;
 
@@ -1390,6 +1408,20 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
         for (uint j = 0; j < holders.length; j++) {
             totalCompAccrued += compAccrued[holders[j]];
         }
+    }
+
+    /**
+     * @dev Tells exchange to transfer in an asset
+     */
+    function doTransferIn(address asset, address from, uint amount) virtual external override returns (uint) {
+        return Exchange(_exchange).doTransferIn(asset, from, amount);
+    }
+
+    /**
+     * @dev Tells exchange to transfer out an asset
+     */
+    function doTransferOut(address asset, address payable to, uint amount) virtual external override {
+        return Exchange(_exchange).doTransferOut(asset, to, amount);
     }
 
     /**

@@ -386,10 +386,10 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param mintAmount The amount of the underlying asset to supply
      */
-    function mintInternal(uint mintAmount) internal nonReentrant {
+    function mintInternal(address account, uint mintAmount) internal nonReentrant {
         accrueInterest();
         // mintFresh emits the actual Mint event if successful and logs on errors, so we don't need to
-        mintFresh(msg.sender, mintAmount);
+        mintFresh(account, mintAmount);
     }
 
     /**
@@ -400,7 +400,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      */
     function mintFresh(address minter, uint mintAmount) internal {
         /* Fail if mint not allowed */
-        uint allowed = comptroller.mintAllowed(address(this), minter, mintAmount);
+        uint allowed = comptroller.mintAllowed(address(this), minter, msg.sender, mintAmount);
         if (allowed != 0) {
             revert MintComptrollerRejection(allowed);
         }
@@ -424,7 +424,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
          *  in case of a fee. On success, the cToken holds an additional `actualMintAmount`
          *  of cash.
          */
-        uint actualMintAmount = doTransferIn(minter, mintAmount);
+        uint actualMintAmount = comptroller.doTransferIn(underlying, minter, mintAmount);
 
         /*
          * We get the current exchange rate and calculate the number of cTokens to be minted:
@@ -456,10 +456,10 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemTokens The number of cTokens to redeem into underlying
      */
-    function redeemInternal(uint redeemTokens) internal nonReentrant {
+    function redeemInternal(address account, uint redeemTokens) internal nonReentrant {
         accrueInterest();
         // redeemFresh emits redeem-specific logs on errors, so we don't need to
-        redeemFresh(payable(msg.sender), redeemTokens, 0);
+        redeemFresh(payable(account), redeemTokens, 0);
     }
 
     /**
@@ -467,10 +467,10 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemAmount The amount of underlying to receive from redeeming cTokens
      */
-    function redeemUnderlyingInternal(uint redeemAmount) internal nonReentrant {
+    function redeemUnderlyingInternal(address account, uint redeemAmount) internal nonReentrant {
         accrueInterest();
         // redeemFresh emits redeem-specific logs on errors, so we don't need to
-        redeemFresh(payable(msg.sender), 0, redeemAmount);
+        redeemFresh(payable(account), 0, redeemAmount);
     }
 
     /**
@@ -509,7 +509,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
         }
 
         /* Fail if redeem not allowed */
-        uint allowed = comptroller.redeemAllowed(address(this), redeemer, redeemTokens);
+        uint allowed = comptroller.redeemAllowed(address(this), redeemer, msg.sender, redeemTokens);
         if (allowed != 0) {
             revert RedeemComptrollerRejection(allowed);
         }
@@ -542,7 +542,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
          *  On success, the cToken has redeemAmount less of cash.
          *  doTransferOut reverts if anything goes wrong, since we can't be sure if side effects occurred.
          */
-        doTransferOut(redeemer, redeemAmount);
+        comptroller.doTransferOut(underlying, redeemer, redeemAmount);
 
         /* We emit a Transfer event, and a Redeem event */
         emit Transfer(redeemer, address(this), redeemTokens);
@@ -556,10 +556,10 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
       * @notice Sender borrows assets from the protocol to their own address
       * @param borrowAmount The amount of the underlying asset to borrow
       */
-    function borrowInternal(uint borrowAmount) internal nonReentrant {
+    function borrowInternal(address account, uint borrowAmount) internal nonReentrant {
         accrueInterest();
         // borrowFresh emits borrow-specific logs on errors, so we don't need to
-        borrowFresh(payable(msg.sender), borrowAmount);
+        borrowFresh(payable(account), borrowAmount);
     }
 
     /**
@@ -568,7 +568,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
       */
     function borrowFresh(address payable borrower, uint borrowAmount) internal {
         /* Fail if borrow not allowed */
-        uint allowed = comptroller.borrowAllowed(address(this), borrower, borrowAmount);
+        uint allowed = comptroller.borrowAllowed(address(this), borrower, msg.sender, borrowAmount);
         if (allowed != 0) {
             revert BorrowComptrollerRejection(allowed);
         }
@@ -610,7 +610,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
          *  On success, the cToken borrowAmount less of cash.
          *  doTransferOut reverts if anything goes wrong, since we can't be sure if side effects occurred.
          */
-        doTransferOut(borrower, borrowAmount);
+        comptroller.doTransferOut(underlying, borrower, borrowAmount);
 
         /* We emit a Borrow event */
         emit Borrow(borrower, borrowAmount, accountBorrowsNew, totalBorrowsNew);
@@ -620,10 +620,10 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      * @notice Sender repays their own borrow
      * @param repayAmount The amount to repay, or -1 for the full outstanding amount
      */
-    function repayBorrowInternal(uint repayAmount) internal nonReentrant {
+    function repayBorrowInternal(address account, uint repayAmount) internal nonReentrant {
         accrueInterest();
         // repayBorrowFresh emits repay-borrow-specific logs on errors, so we don't need to
-        repayBorrowFresh(msg.sender, msg.sender, repayAmount);
+        repayBorrowFresh(account, account, repayAmount);
     }
 
     /**
@@ -631,10 +631,10 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      * @param borrower the account with the debt being payed off
      * @param repayAmount The amount to repay, or -1 for the full outstanding amount
      */
-    function repayBorrowBehalfInternal(address borrower, uint repayAmount) internal nonReentrant {
+    function repayBorrowBehalfInternal(address account, address borrower, uint repayAmount) internal nonReentrant {
         accrueInterest();
         // repayBorrowFresh emits repay-borrow-specific logs on errors, so we don't need to
-        repayBorrowFresh(msg.sender, borrower, repayAmount);
+        repayBorrowFresh(account, borrower, repayAmount);
     }
 
     /**
@@ -646,7 +646,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      */
     function repayBorrowFresh(address payer, address borrower, uint repayAmount) internal returns (uint) {
         /* Fail if repayBorrow not allowed */
-        uint allowed = comptroller.repayBorrowAllowed(address(this), payer, borrower, repayAmount);
+        uint allowed = comptroller.repayBorrowAllowed(address(this), payer, borrower, msg.sender, repayAmount);
         if (allowed != 0) {
             revert RepayBorrowComptrollerRejection(allowed);
         }
@@ -673,7 +673,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
          *  doTransferIn reverts if anything goes wrong, since we can't be sure if side effects occurred.
          *   it returns the amount actually transferred, in case of a fee.
          */
-        uint actualRepayAmount = doTransferIn(payer, repayAmountFinal);
+        uint actualRepayAmount = comptroller.doTransferIn(underlying, payer, repayAmountFinal);
 
         /*
          * We calculate the new borrower and total borrow balances, failing on underflow:
@@ -701,7 +701,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      * @param cTokenCollateral The market in which to seize collateral from the borrower
      * @param repayAmount The amount of the underlying borrowed asset to repay
      */
-    function liquidateBorrowInternal(address borrower, uint repayAmount, ILendingMarket cTokenCollateral) internal nonReentrant {
+    function liquidateBorrowInternal(address account, address borrower, uint repayAmount, ILendingMarket cTokenCollateral) internal nonReentrant {
         accrueInterest();
 
         uint error = cTokenCollateral.accrueInterest();
@@ -711,7 +711,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
         }
 
         // liquidateBorrowFresh emits borrow-specific logs on errors, so we don't need to
-        liquidateBorrowFresh(msg.sender, borrower, repayAmount, cTokenCollateral);
+        liquidateBorrowFresh(account, borrower, repayAmount, cTokenCollateral);
     }
 
     /**
@@ -724,7 +724,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      */
     function liquidateBorrowFresh(address liquidator, address borrower, uint repayAmount, ILendingMarket cTokenCollateral) internal {
         /* Fail if liquidate not allowed */
-        uint allowed = comptroller.liquidateBorrowAllowed(address(this), address(cTokenCollateral), liquidator, borrower, repayAmount);
+        uint allowed = comptroller.liquidateBorrowAllowed(address(this), address(cTokenCollateral), liquidator, borrower, msg.sender, repayAmount);
         if (allowed != 0) {
             revert LiquidateComptrollerRejection(allowed);
         }
@@ -1002,7 +1002,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
          *  it returns the amount actually transferred, in case of a fee.
          */
 
-        actualAddAmount = doTransferIn(msg.sender, addAmount);
+        actualAddAmount = comptroller.doTransferIn(underlying, msg.sender, addAmount);
 
         totalReservesNew = totalReserves + actualAddAmount;
 
@@ -1068,7 +1068,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
         totalReserves = totalReservesNew;
 
         // doTransferOut reverts if anything goes wrong, since we can't be sure if side effects occurred.
-        doTransferOut(admin, reduceAmount);
+        comptroller.doTransferOut(underlying, admin, reduceAmount);
 
         emit ReservesReduced(admin, reduceAmount, totalReservesNew);
 
@@ -1132,82 +1132,6 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      */
     function getCashPrior() virtual internal view returns (uint);
 
-    /**
-     * @dev Performs a transfer in, reverting upon failure. Returns the amount actually transferred to the protocol, in case of a fee.
-     *  This may revert due to insufficient balance or insufficient allowance.
-     * 
-     * @dev Similar to EIP20 transfer, except it handles a False result from `transferFrom` and reverts in that case.
-     *      This will revert due to insufficient balance or insufficient allowance.
-     *      This function returns the actual amount received,
-     *      which may be less than `amount` if there is a fee attached to the transfer.
-     *
-     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
-     *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
-     */
-    function doTransferIn(address from, uint amount) virtual internal returns (uint) {
-        // Read from storage once
-        address underlying_ = underlying;
-        EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying_);
-        uint balanceBefore = EIP20Interface(underlying_).balanceOf(address(this));
-        token.transferFrom(from, address(this), amount);
-        // comptroller.system().vault().decreaseBalance(underlying, amount, from); 
-
-        bool success;
-        assembly {
-            switch returndatasize()
-                case 0 {                       // This is a non-standard ERC-20
-                    success := not(0)          // set success to true
-                }
-                case 32 {                      // This is a compliant ERC-20
-                    returndatacopy(0, 0, 32)
-                    success := mload(0)        // Set `success = returndata` of override external call
-                }
-                default {                      // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
-        }
-        require(success, "TOKEN_TRANSFER_IN_FAILED");
-
-        // Calculate the amount that was *actually* transferred
-        uint balanceAfter = EIP20Interface(underlying_).balanceOf(address(this));
-        // return amount; 
-        return balanceAfter - balanceBefore;   // underflow already checked above, just subtract
-    }
-
-/**
-     * @dev Performs a transfer out, ideally returning an explanatory error code upon failure rather than reverting.
-     *  If caller has not called checked protocol's balance, may revert due to insufficient cash held in the contract.
-     *  If caller has checked protocol's balance, and verified it is >= amount, this should not revert in normal conditions.
-     *
-     * @dev Similar to EIP20 transfer, except it handles a False success from `transfer` and returns an explanatory
-     *      error code rather than reverting. If caller has not called checked protocol's balance, this may revert due to
-     *      insufficient cash held in this contract. If caller has checked protocol's balance prior to this call, and verified
-     *      it is >= amount, this should not revert in normal conditions.
-     *
-     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
-     *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
-     */
-    function doTransferOut(address payable to, uint amount) virtual internal {
-        EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying);
-        token.transfer(to, amount);
-        // comptroller.system().vault().increaseBalance(underlying, amount, to); 
-
-        bool success;
-        assembly {
-            switch returndatasize()
-                case 0 {                      // This is a non-standard ERC-20
-                    success := not(0)          // set success to true
-                }
-                case 32 {                     // This is a compliant ERC-20
-                    returndatacopy(0, 0, 32)
-                    success := mload(0)        // Set `success = returndata` of override external call
-                }
-                default {                     // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
-        }
-        require(success, "TOKEN_TRANSFER_OUT_FAILED");
-    }
     /*** Reentrancy Guard ***/
 
     /**

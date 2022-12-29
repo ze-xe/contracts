@@ -234,23 +234,16 @@ abstract contract ILendingMarket is LendingMarketStorage {
     function _reduceReserves(uint reduceAmount) virtual external returns (uint);
     function _setInterestRateModel(InterestRateModel newInterestRateModel) virtual external returns (uint);
 
-    /*** Exchange Functions ***/
-    function mintFromExchange(address mintFor, uint mintAmount) virtual external returns (uint);
-    function redeemFromExchange(address redeemFor, uint redeemTokens) virtual external returns (uint);
-    function borrowFromExchange(address borrowFor, uint borrowAmount) virtual external returns (uint);
-    function repayFromExchange(address repayFor, uint repayAmount) virtual external returns (uint);
-
     /*** User Interface ***/
 
-    function mint(uint mintAmount) virtual external returns (uint);
-    function redeem(uint redeemTokens) virtual external returns (uint);
-    function redeemUnderlying(uint redeemAmount) virtual external returns (uint);
-    function borrow(uint borrowAmount) virtual external returns (uint);
-    function repayBorrow(uint repayAmount) virtual external returns (uint);
-    function repayBorrowBehalf(address borrower, uint repayAmount) virtual external returns (uint);
-    function liquidateBorrow(address borrower, uint repayAmount, ILendingMarket cTokenCollateral) virtual external returns (uint);
+    function mint(address account, uint mintAmount) virtual external returns (uint);
+    function redeem(address account, uint redeemTokens) virtual external returns (uint);
+    function redeemUnderlying(address account, uint redeemAmount) virtual external returns (uint);
+    function borrow(address account, uint borrowAmount) virtual external returns (uint);
+    function repayBorrow(address account, uint repayAmount) virtual external returns (uint);
+    function repayBorrowBehalf(address account, address borrower, uint repayAmount) virtual external returns (uint);
+    function liquidateBorrow(address account, address borrower, uint repayAmount, ILendingMarket cTokenCollateral) virtual external returns (uint);
     function sweepToken(EIP20NonStandardInterface token) virtual external;
-
 
     /*** Admin Functions ***/
 

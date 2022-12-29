@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./IExchange.sol";
-import "./System.sol";
+import "./lending/interfaces/ILever.sol";
 
 import "./lending/LendingMarket.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -226,6 +226,106 @@ contract Exchange is IExchange, EIP712, Ownable {
         emit OrderCancelled(orderId);
     }
 
+    function mint(address token, uint amount) public {
+        LendingMarket ctoken = _cassets[token];
+        require(address(ctoken) != address(0), "Margin trading not enabled");
+        require(amount >= minTokenAmount(token), "Amount too small");
+        require(ctoken.mint(msg.sender, amount) == 0, "Mint failed");
+    }
+
+    function redeem(address token, uint amount) public {
+        LendingMarket ctoken = _cassets[token];
+        require(address(ctoken) != address(0), "Margin trading not enabled");
+        require(amount >= minTokenAmount(token), "Amount too small");
+        require(ctoken.redeem(msg.sender, amount) == 0, "Redeem failed");
+    }
+
+    function borrow(address token, uint amount) public {
+        LendingMarket ctoken = _cassets[token];
+        require(address(ctoken) != address(0), "Margin trading not enabled");
+        require(amount >= minTokenAmount(token), "Amount too small");
+        require(ctoken.borrow(msg.sender, amount) == 0, "Borrow failed");
+    }
+
+    function repay(address token, uint amount) public {
+        LendingMarket ctoken = _cassets[token];
+        require(address(ctoken) != address(0), "Margin trading not enabled");
+        require(amount >= minTokenAmount(token), "Amount too small");
+        require(ctoken.repayBorrow(msg.sender, amount) == 0, "Repay failed");
+    }
+
+    /**
+     * @dev Performs a transfer in, reverting upon failure. Returns the amount actually transferred to the protocol, in case of a fee.
+     *  This may revert due to insufficient balance or insufficient allowance.
+     * 
+     * @dev Similar to EIP20 transfer, except it handles a False result from `transferFrom` and reverts in that case.
+     *      This will revert due to insufficient balance or insufficient allowance.
+     *      This function returns the actual amount received,
+     *      which may be less than `amount` if there is a fee attached to the transfer.
+     *
+     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
+     *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
+     */
+    function doTransferIn(address asset, address from, uint amount) virtual external returns (uint) {
+        address underlying_ = asset;
+        EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying_);
+        uint balanceBefore = EIP20Interface(underlying_).balanceOf(address(this));
+        token.transferFrom(from, address(this), amount);
+
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                       // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                      // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call 
+                }
+                default {                      // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
+        require(success, "TOKEN_TRANSFER_IN_FAILED");
+
+        // Calculate the amount that was *actually* transferred
+        uint balanceAfter = EIP20Interface(underlying_).balanceOf(address(this));
+        return balanceAfter - balanceBefore;   // underflow already checked above, just subtract
+    }
+
+    /**
+     * @dev Performs a transfer out, ideally returning an explanatory error code upon failure rather than reverting.
+     *  If caller has not called checked protocol's balance, may revert due to insufficient cash held in the contract.
+     *  If caller has checked protocol's balance, and verified it is >= amount, this should not revert in normal conditions.
+     *
+     * @dev Similar to EIP20 transfer, except it handles a False success from `transfer` and returns an explanatory
+     *      error code rather than reverting. If caller has not called checked protocol's balance, this may revert due to
+     *      insufficient cash held in this contract. If caller has checked protocol's balance prior to this call, and verified
+     *      it is >= amount, this should not revert in normal conditions.
+     *
+     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
+     *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
+     */
+    function doTransferOut(address asset, address payable to, uint amount) virtual external {
+        EIP20NonStandardInterface token = EIP20NonStandardInterface(asset);
+        token.transfer(to, amount);
+        bool success;
+        assembly {
+            switch returndatasize()
+                case 0 {                      // This is a non-standard ERC-20
+                    success := not(0)          // set success to true
+                }
+                case 32 {                     // This is a compliant ERC-20
+                    returndatacopy(0, 0, 32)
+                    success := mload(0)        // Set `success = returndata` of override external call
+                }
+                default {                     // This is an excessively non-compliant ERC-20, revert.
+                    revert(0, 0)
+                }
+        }
+        require(success, "TOKEN_TRANSFER_OUT_FAILED");
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                               Admin Functions                              */
     /* -------------------------------------------------------------------------- */
@@ -279,9 +379,9 @@ contract Exchange is IExchange, EIP712, Ownable {
         }
         supplyAmount = supplyAmount.mul(1e6).div(order.borrowLimit);
         // supply
-        supplyToken.mintFromExchange(order.maker, supplyAmount);
+        supplyToken.mint(order.maker, supplyAmount);
         // borrow
-        borrowToken.borrowFromExchange(order.maker, borrowAmount);
+        borrowToken.borrow(order.maker, borrowAmount);
     }
 
     /* -------------------------------------------------------------------------- */

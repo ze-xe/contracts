@@ -1,13 +1,12 @@
-import { expect } from 'chai';
 import hre from 'hardhat';
 import { Contract } from 'ethers';
-import { deploy } from '../../scripts/deploy';
+import { deploy } from '../../scripts/test';
 
 const ethers = hre.ethers;
 const web3 = require('web3');
 const toWei = (x: { toString: () => any }) => web3.utils.toWei(x.toString());
 
-describe('rates', function () {
+describe('lever:rates', function () {
 	let usdc: Contract, cusdc: Contract, btc: Contract, cbtc: Contract, eth: Contract, ceth: Contract, exchange: Contract, vault: Contract, lever: Contract;
 	let owner: any, user1: any, user2: any, user3, user4, user5, user6;
 	let orderIds: string[] = [];
@@ -38,10 +37,10 @@ describe('rates', function () {
 
 	it('utilization = 80%, supply 1000 USDC and borrow 800 USDC', async () => {
 		await usdc.connect(user1).mint(user1.address, toWei(1000));
-		await usdc.connect(user1).approve(cusdc.address, toWei(1000));
+		await usdc.connect(user1).approve(exchange.address, toWei(1000));
 
-		await cusdc.connect(user1).mint(toWei(1000));
-		await cusdc.connect(user1).borrow(toWei(800));
+		await exchange.connect(user1).mint(usdc.address, toWei(1000));
+		await exchange.connect(user1).borrow(usdc.address, toWei(800));
 	})
 
 
@@ -59,9 +58,9 @@ describe('rates', function () {
 	it('utilization = 7%, supply 10000 USDC', async () => {
 		// mint
 		await usdc.connect(user2).mint(user2.address, toWei(10000));
-		await usdc.connect(user2).approve(cusdc.address, toWei(10000));
+		await usdc.connect(user2).approve(exchange.address, toWei(10000));
 
-		await cusdc.connect(user2).mint(toWei(10000));
+		await exchange.connect(user2).mint(usdc.address, toWei(10000));
 	})
 
 	it('check rates', async() => {

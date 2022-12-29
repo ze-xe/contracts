@@ -46,15 +46,8 @@ contract LendingMarket is BaseLendingMarket {
      * @param mintAmount The amount of the underlying asset to supply
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function mint(uint mintAmount) override external returns (uint) {
-        mintInternal(mintAmount);
-        return NO_ERROR;
-    }
-
-    function mintFromExchange(address mintFor, uint mintAmount) override external returns (uint) {
-        // require(comptroller.ex);
-        accrueInterest();
-        mintFresh(mintFor, mintAmount);
+    function mint(address account, uint mintAmount) override external returns (uint) {
+        mintInternal(account, mintAmount);
         return NO_ERROR;
     }
 
@@ -64,14 +57,8 @@ contract LendingMarket is BaseLendingMarket {
      * @param redeemTokens The number of cTokens to redeem into underlying
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function redeem(uint redeemTokens) override external returns (uint) {
-        redeemInternal(redeemTokens);
-        return NO_ERROR;
-    }
-
-    function redeemFromExchange(address redeemFor, uint redeemTokens) override external returns (uint) {
-        accrueInterest();
-        redeemFresh(payable(redeemFor), redeemTokens, 0);
+    function redeem(address account, uint redeemTokens) override external returns (uint) {
+        redeemInternal(account, redeemTokens);
         return NO_ERROR;
     }
 
@@ -81,8 +68,8 @@ contract LendingMarket is BaseLendingMarket {
      * @param redeemAmount The amount of underlying to redeem
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function redeemUnderlying(uint redeemAmount) override external returns (uint) {
-        redeemUnderlyingInternal(redeemAmount);
+    function redeemUnderlying(address account, uint redeemAmount) override external returns (uint) {
+        redeemUnderlyingInternal(account, redeemAmount);
         return NO_ERROR;
     }
 
@@ -91,14 +78,8 @@ contract LendingMarket is BaseLendingMarket {
       * @param borrowAmount The amount of the underlying asset to borrow
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
-    function borrow(uint borrowAmount) override external returns (uint) {
-        borrowInternal(borrowAmount);
-        return NO_ERROR;
-    }
-
-    function borrowFromExchange(address borrowFor, uint borrowAmount) override external returns (uint) {
-        accrueInterest();
-        borrowFresh(payable(borrowFor), borrowAmount);
+    function borrow(address account, uint borrowAmount) override external returns (uint) {
+        borrowInternal(account, borrowAmount);
         return NO_ERROR;
     }
 
@@ -107,14 +88,8 @@ contract LendingMarket is BaseLendingMarket {
      * @param repayAmount The amount to repay, or -1 for the full outstanding amount
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function repayBorrow(uint repayAmount) override external returns (uint) {
-        repayBorrowInternal(repayAmount);
-        return NO_ERROR;
-    }
-
-    function repayFromExchange(address repayFor, uint repayAmount) override external returns (uint) {
-        accrueInterest();
-        repayBorrowFresh(repayFor, repayFor, repayAmount);
+    function repayBorrow(address account, uint repayAmount) override external returns (uint) {
+        repayBorrowInternal(account, repayAmount);
         return NO_ERROR;
     }
 
@@ -124,8 +99,8 @@ contract LendingMarket is BaseLendingMarket {
      * @param repayAmount The amount to repay, or -1 for the full outstanding amount
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function repayBorrowBehalf(address borrower, uint repayAmount) override external returns (uint) {
-        repayBorrowBehalfInternal(borrower, repayAmount);
+    function repayBorrowBehalf(address account, address borrower, uint repayAmount) override external returns (uint) {
+        repayBorrowBehalfInternal(account, borrower, repayAmount);
         return NO_ERROR;
     }
 
@@ -137,8 +112,8 @@ contract LendingMarket is BaseLendingMarket {
      * @param cTokenCollateral The market in which to seize collateral from the borrower
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function liquidateBorrow(address borrower, uint repayAmount, ILendingMarket cTokenCollateral) override external returns (uint) {
-        liquidateBorrowInternal(borrower, repayAmount, cTokenCollateral);
+    function liquidateBorrow(address account, address borrower, uint repayAmount, ILendingMarket cTokenCollateral) override external returns (uint) {
+        liquidateBorrowInternal(account, borrower, repayAmount, cTokenCollateral);
         return NO_ERROR;
     }
 
@@ -171,6 +146,6 @@ contract LendingMarket is BaseLendingMarket {
      */
     function getCashPrior() virtual override internal view returns (uint) {
         EIP20Interface token = EIP20Interface(underlying);
-        return token.balanceOf(address(this));
+        return token.balanceOf(comptroller.exchange());
     }
 }

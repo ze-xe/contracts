@@ -1,15 +1,12 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
 import { Contract } from 'ethers';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { deploy } from '../../scripts/deploy';
+import { deploy } from '../../scripts/test';
 import {BigNumber} from 'ethers';
 
 const ethers = hre.ethers;
-const web3 = require('web3');
-const toWei = (x: { toString: () => any }) => web3.utils.toWei(x.toString());
 
-describe('zexe', function () {
+describe('leverage:short', function () {
 	let usdc: Contract, btc: Contract, exchange: Contract, cbtc: Contract, cusdc: Contract, lever: Contract;
 	let owner: any, user1: any, user2: any, user3: any, user4: any, user5: any, user6;
 	let orderIds: string[] = [];
@@ -35,7 +32,7 @@ describe('zexe', function () {
         // approve for exchange to sell btc
 		await btc.connect(user1).approve(exchange.address, ethers.constants.MaxUint256);
 		// approve usdc to cusdc market to mint
-		await usdc.connect(user1).approve(cusdc.address, ethers.constants.MaxUint256);
+		await usdc.connect(user1).approve(exchange.address, ethers.constants.MaxUint256);
 
         usdcAmount = ethers.utils.parseEther('200000');
         await usdc.mint(user2.address, usdcAmount);
@@ -56,13 +53,13 @@ describe('zexe', function () {
         // address 100 btc 100000 usdc to market
         const btcAmount = ethers.utils.parseEther('1000');
         await btc.mint(user3.address, btcAmount);
-        await btc.connect(user3).approve(cbtc.address, ethers.constants.MaxUint256);
-        await cbtc.connect(user3).mint(btcAmount);
+        await btc.connect(user3).approve(exchange.address, ethers.constants.MaxUint256);
+        await exchange.connect(user3).mint(btc.address, btcAmount);
 
         const usdcAmount = ethers.utils.parseEther('10000000');
         await usdc.mint(user4.address, usdcAmount);
-        await usdc.connect(user4).approve(cusdc.address, ethers.constants.MaxUint256);
-        await cusdc.connect(user4).mint(usdcAmount);
+        await usdc.connect(user4).approve(exchange.address, ethers.constants.MaxUint256);
+        await exchange.connect(user4).mint(usdc.address, usdcAmount);
     })
 
 	it('user1 creates long order of 1 btc @ 20000 @ 3x', async () => {
