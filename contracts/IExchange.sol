@@ -35,6 +35,7 @@ interface IExchange {
 
     event OrderExecuted(bytes32 orderId, address taker, uint fillAmount);
     event OrderCancelled(bytes32 orderId);
+    event MinTokenAmountSet(address token, uint amount);
 
     /* -------------------------------------------------------------------------- */
     /*                                 Structures                                 */

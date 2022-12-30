@@ -46,7 +46,8 @@ export async function deploy() {
   await oracle.setUnderlyingPrice(ceth.address, inEth('1124'));
   await lever._supportMarket(ceth.address)
   await lever._setCollateralFactor(ceth.address, inEth('0.9'));
-  await exchange.enableMarginTrading(eth.address, ceth.address, ethers.utils.parseUnits('1', 10));
+  await exchange.enableMarginTrading(eth.address, ceth.address);
+  await exchange.setMinTokenAmount(eth.address, inEth('0.1'));
 
   const btc = await ERC20.deploy("Bitcoin", "BTC");
   await btc.deployed();
@@ -56,7 +57,8 @@ export async function deploy() {
   await oracle.setUnderlyingPrice(cbtc.address, inEth('16724'));
   await lever._supportMarket(cbtc.address)
   await lever._setCollateralFactor(cbtc.address, inEth('0.9'));
-  await exchange.enableMarginTrading(btc.address, cbtc.address, ethers.utils.parseUnits('1', 10));
+  await exchange.enableMarginTrading(btc.address, cbtc.address);
+  await exchange.setMinTokenAmount(btc.address, inEth('0.001'));
 
   const usdc = await ERC20.deploy("USD Coin", "USDC");
   await usdc.deployed();
@@ -65,7 +67,8 @@ export async function deploy() {
   await oracle.setUnderlyingPrice(cusdc.address, inEth('1'));
   await lever._supportMarket(cusdc.address)
   await lever._setCollateralFactor(cusdc.address, inEth('0.9'));
-  await exchange.enableMarginTrading(usdc.address, cusdc.address, ethers.utils.parseUnits('1', 10));
+  await exchange.enableMarginTrading(usdc.address, cusdc.address);
+  await exchange.setMinTokenAmount(usdc.address, inEth('10'));
 
   const czexe = await LendingMarket.deploy(zexe.address, lever.address, irm.address, inEth('2'), 'Zexe', 'ZEXE', 18);
   await czexe.deployed();
@@ -73,7 +76,8 @@ export async function deploy() {
   await oracle.setUnderlyingPrice(czexe.address, inEth('0.01'));
   await lever._supportMarket(czexe.address)
   await lever._setCollateralFactor(czexe.address, inEth('0.6'));
-  await exchange.enableMarginTrading(zexe.address, czexe.address, ethers.utils.parseUnits('1', 10));
+  await exchange.enableMarginTrading(zexe.address, czexe.address);
+  await exchange.setMinTokenAmount(zexe.address, inEth('10'));
 
   await zexe.mint(lever.address, ethers.utils.parseEther('10000000000000'));
   await lever._setCompSpeeds(

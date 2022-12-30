@@ -10,6 +10,8 @@ export async function deploy(logs = false) {
   const Exchange = await ethers.getContractFactory("Exchange");
   const exchange = await Exchange.deploy(); 
   await exchange.deployed();
+
+  if(logs) console.log("Exchange deployed to:", exchange.address);
   
   /* -------------------------------------------------------------------------- */
   /*                                 ZEXE Token                                 */
@@ -42,48 +44,52 @@ export async function deploy(logs = false) {
 
   const eth = await ERC20.deploy("Ethereum", "ETH");
   await eth.deployed();
-  const ceth = await LendingMarket.deploy(eth.address, lever.address, irm.address, inEth('2'), 'Ethereum', 'ETH', 18);
+  const ceth = await LendingMarket.deploy(eth.address, lever.address, irm.address, inEth('2'), 'Lever Ethereum', 'lETH', 18);
   await ceth.deployed();
   
   await oracle.setUnderlyingPrice(ceth.address, inEth('1124'));
   await lever._supportMarket(ceth.address)
   await lever._setCollateralFactor(ceth.address, inEth('0.9'));
-  await exchange.enableMarginTrading(eth.address, ceth.address, ethers.utils.parseUnits('1', 10));
+  await exchange.enableMarginTrading(eth.address, ceth.address);
+  await exchange.setMinTokenAmount(eth.address, inEth('0.01'));
   if(logs) console.log("ETH deployed to:", eth.address);
-  if(logs) console.log("cETH market deployed to:", ceth.address);
+  if(logs) console.log("lETH market deployed to:", ceth.address);
 
   const btc = await ERC20.deploy("Bitcoin", "BTC");
   await btc.deployed();
-  const cbtc = await LendingMarket.deploy(btc.address, lever.address, irm.address, inEth('2'), 'Bitcoin', 'BTC', 18);
+  const cbtc = await LendingMarket.deploy(btc.address, lever.address, irm.address, inEth('2'), 'Lever Bitcoin', 'lBTC', 18);
   await cbtc.deployed();
   
   await oracle.setUnderlyingPrice(cbtc.address, inEth('16724'));
   await lever._supportMarket(cbtc.address)
   await lever._setCollateralFactor(cbtc.address, inEth('0.9'));
-  await exchange.enableMarginTrading(btc.address, cbtc.address, ethers.utils.parseUnits('1', 10));
+  await exchange.enableMarginTrading(btc.address, cbtc.address);
+  await exchange.setMinTokenAmount(btc.address, inEth('0.001'));
   if(logs) console.log("BTC deployed to:", btc.address);
-  if(logs) console.log("cBTC deployed to:", cbtc.address);
+  if(logs) console.log("lBTC deployed to:", cbtc.address);
 
   const usdc = await ERC20.deploy("USD Coin", "USDC");
   await usdc.deployed();
-  const cusdc = await LendingMarket.deploy(usdc.address, lever.address, irm.address, inEth('10'), 'USD Coin', 'USDC', 18);
+  const cusdc = await LendingMarket.deploy(usdc.address, lever.address, irm.address, inEth('10'), 'Lever USD Coin', 'lUSDC', 18);
   await cusdc.deployed();
   await oracle.setUnderlyingPrice(cusdc.address, inEth('1'));
   await lever._supportMarket(cusdc.address)
   await lever._setCollateralFactor(cusdc.address, inEth('0.9'));
-  await exchange.enableMarginTrading(usdc.address, cusdc.address, ethers.utils.parseUnits('1', 10));
+  await exchange.enableMarginTrading(usdc.address, cusdc.address);
+  await exchange.setMinTokenAmount(usdc.address, inEth('0.10'));
   if(logs) console.log("USDC deployed to:", usdc.address);
-  if(logs) console.log("cUSDC deployed to:", cusdc.address);
+  if(logs) console.log("lUSDC deployed to:", cusdc.address);
 
-  const czexe = await LendingMarket.deploy(zexe.address, lever.address, irm.address, inEth('2'), 'Zexe', 'ZEXE', 18);
+  const czexe = await LendingMarket.deploy(zexe.address, lever.address, irm.address, inEth('2'), 'Lever Zexe', 'lZEXE', 18);
   await czexe.deployed();
   
   await oracle.setUnderlyingPrice(czexe.address, inEth('0.01'));
   await lever._supportMarket(czexe.address)
   await lever._setCollateralFactor(czexe.address, inEth('0.6'));
-  await exchange.enableMarginTrading(zexe.address, czexe.address, ethers.utils.parseUnits('1', 10));
+  await exchange.enableMarginTrading(zexe.address, czexe.address);
+  await exchange.setMinTokenAmount(zexe.address, inEth('100'));
   if(logs) console.log("ZEXE deployed to:", zexe.address);
-  if(logs) console.log("cZEXE deployed to:", czexe.address);
+  if(logs) console.log("lZEXE deployed to:", czexe.address);
 
 
   await zexe.mint(lever.address, ethers.utils.parseEther('10000000000000'));
@@ -117,7 +123,7 @@ export async function deploy(logs = false) {
   try{
     await hre.run("verify:verify", {
       address: ceth.address,
-      constructorArguments: [eth.address, lever.address, irm.address, inEth('2'), 'Ethereum', 'ETH', 18],
+      constructorArguments: [eth.address, lever.address, irm.address, inEth('2'), 'Lever Ethereum', 'lETH', 18],
     });
   } catch {
     console.log("Failed to verify ceth")
@@ -126,7 +132,7 @@ export async function deploy(logs = false) {
   try{
     await hre.run("verify:verify", {
       address: cbtc.address,
-      constructorArguments: [btc.address, lever.address, irm.address, inEth('2'), 'Bitcoin', 'BTC', 18],
+      constructorArguments: [btc.address, lever.address, irm.address, inEth('2'), 'Lever Bitcoin', 'lBTC', 18],
     });
   } catch {
     console.log("Failed to verify cbtc")
@@ -135,7 +141,7 @@ export async function deploy(logs = false) {
   try{
     await hre.run("verify:verify", {
       address: cusdc.address,
-      constructorArguments: [usdc.address, lever.address, irm.address, inEth('10'), 'USD Coin', 'USDC', 18],
+      constructorArguments: [usdc.address, lever.address, irm.address, inEth('10'), 'Lever USD Coin', 'lUSDC', 18],
     });
   } catch {
     console.log("Failed to verify cusdc")
@@ -144,7 +150,7 @@ export async function deploy(logs = false) {
   try{
     await hre.run("verify:verify", {
       address: czexe.address,
-      constructorArguments: [zexe.address, lever.address, irm.address, inEth('2'), 'Zexe', 'ZEXE', 18],
+      constructorArguments: [zexe.address, lever.address, irm.address, inEth('2'), 'Lever Zexe', 'lZEXE', 18],
     });
   } catch {
     console.log("Failed to verify czexe")

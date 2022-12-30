@@ -104,8 +104,8 @@ describe('leverage:long', function () {
 			orderType: 2, // long
             salt: '12345',
             exchangeRate: ethers.utils.parseEther('20000'),
-            borrowLimit: borrowLimit * 1e6,
-            loops: loops,
+            borrowLimit: 0.75 * 1e6, // borrowLimit * 1e6,
+            loops: 5 // loops,
 		};
 
         orders.push(value);
@@ -139,13 +139,17 @@ describe('leverage:long', function () {
 
         await lever.connect(user1).enterMarkets([cbtc.address, cusdc.address]);
         
-        // 1 BTC -> 0.75 BTC -> 0.56 BTC = 0.42 BTC
+        // 0.75 BTC + 0.56 BTC + 0.42 BTC + 0.27 = 2 BTC
 		const btcAmount = ethers.utils.parseEther('2');
-		await exchange.connect(user2).executeLimitOrders(
+		let tx = await exchange.connect(user2).executeLimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount
 		);
+
+		// tx = await tx.wait(1);
+
+		expect(tx).to.emit(exchange, 'OrderExecuted').withArgs([orderIds[0]], [btcAmount], [ethers.utils.parseEther('40000')]);
 		
 		expect(await usdc.balanceOf(user2.address)).to.equal(ethers.utils.parseEther('40000'));
 		expect(await btc.balanceOf(user2.address)).to.equal(ethers.utils.parseEther('8'));
