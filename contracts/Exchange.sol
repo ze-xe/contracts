@@ -158,12 +158,14 @@ contract Exchange is IExchange, EIP712, Ownable {
             }
 
             exchangeInternal(order, msg.sender, _executedAmount);
-            emit OrderExecuted(digest, msg.sender, _executedAmount);
 
             // If no/min fill amount left
             if (amountToFill <= minTokenAmount(order.token0)) {
                 break;
             }
+        }
+        if(_executedAmount > 0){
+            emit OrderExecuted(digest, msg.sender, _executedAmount);
         }
         return amountToFill;
     }
@@ -198,8 +200,6 @@ contract Exchange is IExchange, EIP712, Ownable {
             _loopFills[digest] += amountToFillInThisLoop;
             amountToFill = amountToFill.sub(amountToFillInThisLoop);
 
-            emit OrderExecuted(digest, msg.sender, _executedAmount);
-
             if(thisLoopFill + amountToFillInThisLoop == thisLoopLimitFill){
                 _loops[digest] += 1;
                 _loopFills[digest] = 0;
@@ -210,6 +210,10 @@ contract Exchange is IExchange, EIP712, Ownable {
                 break;
             }
         }
+        if(_executedAmount > 0){
+            emit OrderExecuted(digest, msg.sender, _executedAmount);
+        }
+        
         return amountToFill;
     }
 
@@ -329,11 +333,15 @@ contract Exchange is IExchange, EIP712, Ownable {
     /* -------------------------------------------------------------------------- */
     /*                               Admin Functions                              */
     /* -------------------------------------------------------------------------- */
-    function enableMarginTrading(address token, address cToken, uint minAmount) external onlyOwner {
+    function enableMarginTrading(address token, address cToken) external onlyOwner {
         _cassets[token] = LendingMarket(cToken);
         require(LendingMarket(cToken).underlying() == token, "Invalid cToken");
-        _minTokenAmount[token] = minAmount;
         emit MarginEnabled(token, cToken);
+    }
+
+    function setMinTokenAmount(address token, uint amount) external onlyOwner {
+        _minTokenAmount[token] = amount;
+        emit MinTokenAmountSet(token, amount);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -379,6 +387,7 @@ contract Exchange is IExchange, EIP712, Ownable {
         }
         supplyAmount = supplyAmount.mul(1e6).div(order.borrowLimit);
         // supply
+        console.log("Supplying", supplyAmount);
         supplyToken.mint(order.maker, supplyAmount);
         // borrow
         borrowToken.borrow(order.maker, borrowAmount);
