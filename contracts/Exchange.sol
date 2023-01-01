@@ -270,7 +270,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
      * @param token Token to deposit
      * @param amount Amount of token to deposit
      */
-    function deposit(address token, uint amount) public {
+    function mint(address token, uint amount) public {
         LendingMarket ctoken = assetToMarket[token];
         require(address(ctoken) != address(0), "Margin trading not enabled");
         require(amount >= minTokenAmount[token], "Amount too small");
@@ -282,7 +282,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
      * @param token Token to withdraw
      * @param amount Amount of token to withdraw
      */
-    function withdraw(address token, uint amount) public {
+    function redeem(address token, uint amount) public {
         LendingMarket ctoken = assetToMarket[token];
         require(address(ctoken) != address(0), "Margin trading not enabled");
         require(amount >= minTokenAmount[token], "Amount too small");

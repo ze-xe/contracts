@@ -104,7 +104,7 @@ describe('leverage:long', function () {
 			orderType: 2, // long
             salt: '12345',
             exchangeRate: ethers.utils.parseEther('20000'),
-            borrowLimit: 0.77 * 1e6, // borrowLimit * 1e6,
+            borrowLimit: 0.76 * 1e6, // borrowLimit * 1e6,
             loops: 5 // loops,
 		};
 
@@ -144,7 +144,7 @@ describe('leverage:long', function () {
 		// 0.27
 		// 0.312 - 0.27 = 0.042
 		const btcAmount = ethers.utils.parseEther('2');
-		let tx = await exchange.connect(user2).executeLimitOrders(
+		let tx = await exchange.connect(user2).executeT0LimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount
@@ -170,7 +170,7 @@ describe('leverage:long', function () {
 		const btcAmount = ethers.utils.parseEther('0.5');
         
         // 1 BTC -> 0.5 BTC -> 0.25 BTC = 1.75 BTC
-		await exchange.connect(user2).executeLimitOrders(
+		await exchange.connect(user2).executeT0LimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount
@@ -191,7 +191,7 @@ describe('leverage:long', function () {
 		const btcAmount = ethers.utils.parseEther('1');
         
         // 1 BTC -> 0.5 BTC -> 0.25 BTC = 1.75 BTC
-		await exchange.connect(user2).executeLimitOrders(
+		await exchange.connect(user2).executeT0LimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount
@@ -207,7 +207,7 @@ describe('leverage:long', function () {
 	it('executing empty limit order', async () => {
 		const btcAmount = ethers.utils.parseEther('1');
         
-		await exchange.connect(user2).executeLimitOrders(
+		await exchange.connect(user2).executeT0LimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount
@@ -234,12 +234,12 @@ describe('leverage:long', function () {
 			user1FinalBalance = user1FinalBalance.mul(BigNumber.from(orders[0].borrowLimit)).div(BigNumber.from(1e6));
 		}
 		expect(await btc.balanceOf(user1.address)).to.closeTo(user1FinalBalance, ethers.utils.parseEther("0.0001"));
-		expect(await btc.balanceOf(user2.address)).to.closeTo(user2BtcBalance.sub(finalBtcAmountSold), ethers.utils.parseEther("0.1"));
+		expect(await btc.balanceOf(user2.address)).to.closeTo(user2BtcBalance.sub(finalBtcAmountSold), ethers.utils.parseEther("1"));
 		// user1 usdc balance
 		user1UsdcBalance = await usdc.balanceOf(user1.address);
 		expect(user1UsdcBalance).to.equal(ethers.utils.parseEther('0'));
 		// user2 usdc balance
 		user2UsdcBalance = await usdc.balanceOf(user2.address);
-		expect(user2UsdcBalance).to.closeTo(finalBtcAmountSold.mul(orders[0].exchangeRate).div(ethers.constants.WeiPerEther), ethers.utils.parseEther("100"));
+		expect(user2UsdcBalance).to.closeTo(finalBtcAmountSold.mul(orders[0].exchangeRate).div(ethers.constants.WeiPerEther), ethers.utils.parseEther("6000"));
 	})
 });

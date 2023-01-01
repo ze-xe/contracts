@@ -1,4 +1,3 @@
-import { Contract } from "ethers";
 import hre, { ethers } from "hardhat";
 const { upgrades } = require("hardhat");
 import fs from 'fs';
