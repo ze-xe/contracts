@@ -51,12 +51,12 @@ describe('leverage:long', function () {
     it("make market liquid", async () => {
         // user 3, 4 and 5 are market makers
         // address 100 btc 100000 usdc to market
-        const btcAmount = ethers.utils.parseEther('1000');
+        const btcAmount = ethers.utils.parseEther('10000');
         await btc.mint(user3.address, btcAmount);
         await btc.connect(user3).approve(exchange.address, ethers.constants.MaxUint256);
         await exchange.connect(user3).mint(btc.address, btcAmount);
 
-        const usdcAmount = ethers.utils.parseEther('10000000');
+        const usdcAmount = ethers.utils.parseEther('100000000');
         await usdc.mint(user4.address, usdcAmount);
         await usdc.connect(user4).approve(exchange.address, ethers.constants.MaxUint256);
         await exchange.connect(user4).mint(usdc.address, usdcAmount);
@@ -104,7 +104,7 @@ describe('leverage:long', function () {
 			orderType: 2, // long
             salt: '12345',
             exchangeRate: ethers.utils.parseEther('20000'),
-            borrowLimit: 0.75 * 1e6, // borrowLimit * 1e6,
+            borrowLimit: 0.77 * 1e6, // borrowLimit * 1e6,
             loops: 5 // loops,
 		};
 
@@ -139,7 +139,10 @@ describe('leverage:long', function () {
 
         await lever.connect(user1).enterMarkets([cbtc.address, cusdc.address]);
         
-        // 0.75 BTC + 0.56 BTC + 0.42 BTC + 0.27 = 2 BTC
+        // 0.75 BTC + 0.56 BTC + 0.42 BTC + 0.27 (0.312) = 2 BTC
+		// 4 
+		// 0.27
+		// 0.312 - 0.27 = 0.042
 		const btcAmount = ethers.utils.parseEther('2');
 		let tx = await exchange.connect(user2).executeLimitOrders(
             [signatures[0]],

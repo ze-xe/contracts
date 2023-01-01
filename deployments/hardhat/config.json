@@ -1,0 +1,80 @@
+{
+	"name": "zexe",
+    "version": "0.0.1",
+    "fee": "0.001",
+    "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7",
+    "tokens": [
+        {
+            "name": "Bitcoin",
+            "symbol": "BTC",
+            "marginEnabled": true,
+            "address": null,
+            "interestRateModel": {
+                "baseRate": "0.05",
+                "multiplier": "0.25",
+                "jumpMultiplierPerBlock": "0.05",
+                "kink": "0.80",
+                "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7"
+            },
+            "price": "16720.22",
+            "collateralFactor": "0.9",
+            "minTokenAmount": "0.001",
+            "supplySpeed": "0.00001",
+            "borrowSpeed": "0.00001"
+        },
+        {
+            "name": "Ethereum",
+            "symbol": "ETH",
+            "marginEnabled": true,
+            "address": null,
+            "interestRateModel": {
+                "baseRate": "0.05",
+                "multiplier": "0.25",
+                "jumpMultiplierPerBlock": "0.05",
+                "kink": "0.80",
+                "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7"
+            },
+            "price": "1211.9",
+            "collateralFactor": "0.9",
+            "minTokenAmount": "0.01",
+            "supplySpeed": "0.00001",
+            "borrowSpeed": "0.00001"
+        },
+        {
+            "name": "USD Coin",
+            "symbol": "USDC",
+            "marginEnabled": true,
+            "address": null,
+            "interestRateModel": {
+                "baseRate": "0.05",
+                "multiplier": "0.25",
+                "jumpMultiplierPerBlock": "0.05",
+                "kink": "0.80",
+                "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7"
+            },
+            "price": "1.0",
+            "collateralFactor": "0.95",
+            "minTokenAmount": "10",
+            "supplySpeed": "0.00001",
+            "borrowSpeed": "0.00001"
+        },
+        {
+            "name": "ChainLink",
+            "symbol": "LINK",
+            "marginEnabled": true,
+            "address": null,
+            "interestRateModel": {
+                "baseRate": "0.05",
+                "multiplier": "0.25",
+                "jumpMultiplierPerBlock": "0.05",
+                "kink": "0.80",
+                "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7"
+            },
+            "price": "3.2",
+            "collateralFactor": "0.85",
+            "minTokenAmount": "3",
+            "supplySpeed": "0.00001",
+            "borrowSpeed": "0.00001"
+        }
+    ]
+}

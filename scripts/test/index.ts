@@ -32,7 +32,7 @@ export async function deploy() {
   const LendingMarket = await ethers.getContractFactory("LendingMarket");
   const PriceOracle = await ethers.getContractFactory("SimplePriceOracle");
   const InterestRateModel = await ethers.getContractFactory("JumpRateModelV2");
-  const irm = await InterestRateModel.deploy(inEth('0.05'), inEth('0.25'), inEth('0.05'), inEth('0.80'), '0x22F221b77Cd7770511421c8E0636940732016Dcd');
+  const irm = await InterestRateModel.deploy(inEth('0.05'), inEth('0.25'), inEth('0.05'), inEth('0.90'), '0x22F221b77Cd7770511421c8E0636940732016Dcd');
   await irm.deployed();
 
   const oracle = await PriceOracle.deploy();
@@ -45,7 +45,7 @@ export async function deploy() {
   
   await oracle.setUnderlyingPrice(ceth.address, inEth('1124'));
   await lever._supportMarket(ceth.address)
-  await lever._setCollateralFactor(ceth.address, inEth('0.9'));
+  await lever._setCollateralFactor(ceth.address, inEth('0.92'));
   await exchange.enableMarginTrading(eth.address, ceth.address);
   await exchange.setMinTokenAmount(eth.address, inEth('0.1'));
 
@@ -56,7 +56,7 @@ export async function deploy() {
   
   await oracle.setUnderlyingPrice(cbtc.address, inEth('16724'));
   await lever._supportMarket(cbtc.address)
-  await lever._setCollateralFactor(cbtc.address, inEth('0.9'));
+  await lever._setCollateralFactor(cbtc.address, inEth('0.92'));
   await exchange.enableMarginTrading(btc.address, cbtc.address);
   await exchange.setMinTokenAmount(btc.address, inEth('0.001'));
 
@@ -66,7 +66,7 @@ export async function deploy() {
   await cusdc.deployed();
   await oracle.setUnderlyingPrice(cusdc.address, inEth('1'));
   await lever._supportMarket(cusdc.address)
-  await lever._setCollateralFactor(cusdc.address, inEth('0.9'));
+  await lever._setCollateralFactor(cusdc.address, inEth('0.92'));
   await exchange.enableMarginTrading(usdc.address, cusdc.address);
   await exchange.setMinTokenAmount(usdc.address, inEth('10'));
 
@@ -75,7 +75,7 @@ export async function deploy() {
   
   await oracle.setUnderlyingPrice(czexe.address, inEth('0.01'));
   await lever._supportMarket(czexe.address)
-  await lever._setCollateralFactor(czexe.address, inEth('0.6'));
+  await lever._setCollateralFactor(czexe.address, inEth('0.92'));
   await exchange.enableMarginTrading(zexe.address, czexe.address);
   await exchange.setMinTokenAmount(zexe.address, inEth('10'));
 

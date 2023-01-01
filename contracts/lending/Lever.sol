@@ -84,14 +84,14 @@ contract Lever is LeverStorage, ILever, ErrorReporter, ExponentialNoError {
     uint internal constant closeFactorMinMantissa = 0.05e18; // 0.05
 
     // closeFactorMantissa must not exceed this value
-    uint internal constant closeFactorMaxMantissa = 0.90e18; // 0.95
+    uint internal constant closeFactorMaxMantissa = 0.95e18; // 0.95
 
     // No collateralFactorMantissa may exceed this value
-    uint internal constant collateralFactorMaxMantissa = 0.90e18; // 0.95
+    uint internal constant collateralFactorMaxMantissa = 0.95e18; // 0.95
 
-    constructor(address exchangeAddress, ZEXE _zexe) {
+    constructor(address __exchange, ZEXE _zexe) {
         admin = msg.sender; 
-        _exchange = exchangeAddress;
+        _exchange = __exchange;
         zexe = _zexe;
     }
 
