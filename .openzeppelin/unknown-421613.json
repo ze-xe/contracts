@@ -29,6 +29,31 @@
       "address": "0xF9aa7f98c7442367bC357A9371233a858D0794cb",
       "txHash": "0x658aece683cbd5e26d9d8eda9a1275391c771189bc70dbd7089292c0a07d20cc",
       "kind": "transparent"
+    },
+    {
+      "address": "0xE472E97F241bA46E22044fE079A36c88C96866F8",
+      "txHash": "0xc1446bcb59c1019fbdd134847883fc542dfe02f48d8ff62961f421014a932a4c",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x30f0D74F478815Ffe14058da48eDc78dcF79F749",
+      "txHash": "0xaeb8e96155eb8e6322d6f082356e27a6d890460f2ff58afbe5c9da9e30189738",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x6a27E027A8A208433BF8CCF8Cb085Ba8Ef98e457",
+      "txHash": "0x041d472d50e517de84f234fb1c32ec9ad223e8bff60fafe8b47d479f709a31da",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x8CAE73F871a4E892Fe54136ca95a25D6D2BD248B",
+      "txHash": "0xceb96261e63356a5a241e203ec8e71788a863712da153538679ceb2ad5e39db3",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xf7D784ec22091948bcECC0ABb7e81e2906763747",
+      "txHash": "0x87c728411fc36054493ef0e04fb4436df6ea11a9ce9cf94e9f380b0ae9365fd8",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -421,6 +446,182 @@
               }
             ],
             "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "8a18774f87f0492d2f6b6c78f46c3d99e4c19a0ced86944daa5af3cc118adad4": {
+      "address": "0xA09Fd73B04Db3aC1b44950e37a6B67E7C7f73772",
+      "txHash": "0xc27cb2a1f2152c04c03182640a5956d98622ed6f84ed9ef8bead74c79486c0c9",
+      "layout": {
+        "solcVersion": "0.8.17",
+        "storage": [
+          {
+            "label": "minTokenAmount",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "BaseExchange",
+            "src": "contracts/BaseExchange.sol:49"
+          },
+          {
+            "label": "orderFills",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_bytes32,t_uint256)",
+            "contract": "BaseExchange",
+            "src": "contracts/BaseExchange.sol:51"
+          },
+          {
+            "label": "loopFills",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_bytes32,t_uint256)",
+            "contract": "BaseExchange",
+            "src": "contracts/BaseExchange.sol:52"
+          },
+          {
+            "label": "loops",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_bytes32,t_uint256)",
+            "contract": "BaseExchange",
+            "src": "contracts/BaseExchange.sol:53"
+          },
+          {
+            "label": "assetToMarket",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_mapping(t_address,t_contract(LendingMarket)9824)",
+            "contract": "BaseExchange",
+            "src": "contracts/BaseExchange.sol:55"
+          },
+          {
+            "label": "makerFee",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_uint256",
+            "contract": "BaseExchange",
+            "src": "contracts/BaseExchange.sol:57"
+          },
+          {
+            "label": "takerFee",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_uint256",
+            "contract": "BaseExchange",
+            "src": "contracts/BaseExchange.sol:58"
+          },
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "7",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "_HASHED_NAME",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_bytes32",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:32"
+          },
+          {
+            "label": "_HASHED_VERSION",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_bytes32",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:33"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:120"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "60",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "110",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "111",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(LendingMarket)9824": {
+            "label": "contract LendingMarket",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_contract(LendingMarket)9824)": {
+            "label": "mapping(address => contract LendingMarket)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
           },
           "t_uint256": {
             "label": "uint256",
