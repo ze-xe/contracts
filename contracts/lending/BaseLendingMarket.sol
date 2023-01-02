@@ -25,7 +25,7 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      * @param symbol_ EIP-20 symbol of this token
      * @param decimals_ EIP-20 decimal precision of this token
      */
-    function initialize(
+    function baseInitialize(
         ILever comptroller_,
                         InterestRateModel interestRateModel_,
                         uint initialExchangeRateMantissa_,
@@ -481,7 +481,6 @@ abstract contract BaseLendingMarket is ILendingMarket, ExponentialNoError, Token
      * @param redeemAmountIn The number of underlying tokens to receive from redeeming cTokens (only one of redeemTokensIn or redeemAmountIn may be non-zero)
      */
     function redeemFresh(address payable redeemer, uint redeemTokensIn, uint redeemAmountIn) internal {
-        console.log("Redeeming fresh");
         require(redeemTokensIn == 0 || redeemAmountIn == 0, "one of redeemTokensIn or redeemAmountIn must be zero");
 
         /* exchangeRate = invoke Exchange Rate Stored() */

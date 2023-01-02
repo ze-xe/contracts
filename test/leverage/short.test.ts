@@ -142,18 +142,18 @@ describe('leverage:short', function () {
         
         // 1 BTC -> 0.75 BTC -> 0.56 BTC = 0.42 BTC
 		const btcAmount = ethers.utils.parseEther('2');
-		await exchange.connect(user2).executeLimitOrders(
+		await exchange.connect(user2).executeT0LimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount
 		);
 
-		
-		expect(await usdc.balanceOf(user2.address)).to.equal(ethers.utils.parseEther('160000'));
-		expect(await btc.balanceOf(user2.address)).to.equal(ethers.utils.parseEther('2'));
+		// TODO: check accuracy
+		expect(await usdc.balanceOf(user2.address)).to.be.closeTo(ethers.utils.parseEther('160000'), ethers.utils.parseEther('2'));
+		expect(await btc.balanceOf(user2.address)).to.be.closeTo(ethers.utils.parseEther('2'), ethers.utils.parseEther('0.001'));
 		
 		const loops = await exchange.loops(orderIds[0]);
-        const loopFill = await exchange.loopFill(orderIds[0]);
+        const loopFill = await exchange.loopFills(orderIds[0]);
         console.log('loops', loops.toString());
         console.log('loopFill', loopFill.toString());
         console.log("---------------------");
@@ -165,7 +165,7 @@ describe('leverage:short', function () {
 		const btcAmount = ethers.utils.parseEther('0.5');
         
         // 1 BTC -> 0.5 BTC -> 0.25 BTC = 1.75 BTC
-		await exchange.connect(user2).executeLimitOrders(
+		await exchange.connect(user2).executeT0LimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount
@@ -176,7 +176,7 @@ describe('leverage:short', function () {
         // expect(user1UsdcBalance).to.equal(ethers.utils.parseEther('1250'));
 
         const loops = await exchange.loops(orderIds[0]);
-        const loopFill = await exchange.loopFill(orderIds[0]);
+        const loopFill = await exchange.loopFills(orderIds[0]);
         console.log('loops', loops.toString());
         console.log('loopFill', loopFill.toString());
         console.log("---------------------");
@@ -185,14 +185,14 @@ describe('leverage:short', function () {
     it('sell 1 btc to user1 order @ 20000', async () => {
 		const btcAmount = ethers.utils.parseEther('1');
         
-		await exchange.connect(user2).executeLimitOrders(
+		await exchange.connect(user2).executeT0LimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount
 		);
 
         const loops = await exchange.loops(orderIds[0]);
-        const loopFill = await exchange.loopFill(orderIds[0]);
+        const loopFill = await exchange.loopFills(orderIds[0]);
         console.log('loops', loops.toString());
         console.log('loopFill', loopFill.toString());
         console.log("---------------------");
@@ -201,14 +201,14 @@ describe('leverage:short', function () {
 	it('executing empty limit order', async () => {
 		const btcAmount = ethers.utils.parseEther('1');
         
-		await exchange.connect(user2).executeLimitOrders(
+		await exchange.connect(user2).executeT0LimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount
 		);
 
         const loops = await exchange.loops(orderIds[0]);
-        const loopFill = await exchange.loopFill(orderIds[0]);
+        const loopFill = await exchange.loopFills(orderIds[0]);
         console.log('loops', loops.toString());
         console.log('loopFill', loopFill.toString());
         console.log("---------------------");

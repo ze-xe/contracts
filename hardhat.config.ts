@@ -2,6 +2,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-gas-reporter"
 import "@nomiclabs/hardhat-etherscan";
+import '@openzeppelin/hardhat-upgrades';
 
 require("dotenv").config();
 
@@ -32,7 +33,7 @@ const config: HardhatUserConfig = {
       accounts: [`0x${process.env.PRIVATE_KEY}`],
     },
     arbitrumGoerli: {
-      url: "https://arb-goerli.g.alchemy.com/v2/HyNaane88yHFsK8Yrn4gf2OOzHkd6GAJ",
+      url: `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [`0x${process.env.PRIVATE_KEY}`],
       gasPrice: 1600000000
     }

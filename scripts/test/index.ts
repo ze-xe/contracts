@@ -1,5 +1,5 @@
 import { Contract } from "ethers";
-import hre, { ethers } from "hardhat";
+import hre, { ethers, upgrades } from "hardhat";
 
 
 export async function deploy() {
@@ -8,7 +8,7 @@ export async function deploy() {
   /*                                  Exchange                                  */
   /* -------------------------------------------------------------------------- */
   const Exchange = await ethers.getContractFactory("Exchange");
-  const exchange = await Exchange.deploy(); 
+  const exchange = await upgrades.deployProxy(Exchange, ['zexe', '1']); 
   await exchange.deployed();
   
   /* -------------------------------------------------------------------------- */
@@ -32,7 +32,7 @@ export async function deploy() {
   const LendingMarket = await ethers.getContractFactory("LendingMarket");
   const PriceOracle = await ethers.getContractFactory("SimplePriceOracle");
   const InterestRateModel = await ethers.getContractFactory("JumpRateModelV2");
-  const irm = await InterestRateModel.deploy(inEth('0.05'), inEth('0.25'), inEth('0.05'), inEth('0.80'), '0x22F221b77Cd7770511421c8E0636940732016Dcd');
+  const irm = await InterestRateModel.deploy(inEth('0.05'), inEth('0.25'), inEth('0.05'), inEth('0.90'), '0x22F221b77Cd7770511421c8E0636940732016Dcd');
   await irm.deployed();
 
   const oracle = await PriceOracle.deploy();
@@ -40,44 +40,35 @@ export async function deploy() {
 
   const eth = await ERC20.deploy("Ethereum", "ETH");
   await eth.deployed();
-  const ceth = await LendingMarket.deploy(eth.address, lever.address, irm.address, inEth('2'), 'Ethereum', 'ETH', 18);
+  const ceth = await upgrades.deployProxy(LendingMarket, [eth.address, lever.address, irm.address, inEth('2'), 'Ethereum', 'ETH', 18]);
   await ceth.deployed();
   
   await oracle.setUnderlyingPrice(ceth.address, inEth('1124'));
   await lever._supportMarket(ceth.address)
-  await lever._setCollateralFactor(ceth.address, inEth('0.9'));
+  await lever._setCollateralFactor(ceth.address, inEth('0.92'));
   await exchange.enableMarginTrading(eth.address, ceth.address);
   await exchange.setMinTokenAmount(eth.address, inEth('0.1'));
 
   const btc = await ERC20.deploy("Bitcoin", "BTC");
   await btc.deployed();
-  const cbtc = await LendingMarket.deploy(btc.address, lever.address, irm.address, inEth('2'), 'Bitcoin', 'BTC', 18);
+  const cbtc = await upgrades.deployProxy(LendingMarket, [btc.address, lever.address, irm.address, inEth('2'), 'Bitcoin', 'BTC', 18]);
   await cbtc.deployed();
   
   await oracle.setUnderlyingPrice(cbtc.address, inEth('16724'));
   await lever._supportMarket(cbtc.address)
-  await lever._setCollateralFactor(cbtc.address, inEth('0.9'));
+  await lever._setCollateralFactor(cbtc.address, inEth('0.92'));
   await exchange.enableMarginTrading(btc.address, cbtc.address);
   await exchange.setMinTokenAmount(btc.address, inEth('0.001'));
 
   const usdc = await ERC20.deploy("USD Coin", "USDC");
   await usdc.deployed();
-  const cusdc = await LendingMarket.deploy(usdc.address, lever.address, irm.address, inEth('10'), 'USD Coin', 'USDC', 18);
+  const cusdc = await upgrades.deployProxy(LendingMarket, [usdc.address, lever.address, irm.address, inEth('10'), 'USD Coin', 'USDC', 18]);
   await cusdc.deployed();
   await oracle.setUnderlyingPrice(cusdc.address, inEth('1'));
   await lever._supportMarket(cusdc.address)
-  await lever._setCollateralFactor(cusdc.address, inEth('0.9'));
+  await lever._setCollateralFactor(cusdc.address, inEth('0.92'));
   await exchange.enableMarginTrading(usdc.address, cusdc.address);
   await exchange.setMinTokenAmount(usdc.address, inEth('10'));
-
-  const czexe = await LendingMarket.deploy(zexe.address, lever.address, irm.address, inEth('2'), 'Zexe', 'ZEXE', 18);
-  await czexe.deployed();
-  
-  await oracle.setUnderlyingPrice(czexe.address, inEth('0.01'));
-  await lever._supportMarket(czexe.address)
-  await lever._setCollateralFactor(czexe.address, inEth('0.6'));
-  await exchange.enableMarginTrading(zexe.address, czexe.address);
-  await exchange.setMinTokenAmount(zexe.address, inEth('10'));
 
   await zexe.mint(lever.address, ethers.utils.parseEther('10000000000000'));
   await lever._setCompSpeeds(

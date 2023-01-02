@@ -93,7 +93,7 @@ describe('exchange:limit', function () {
 		expect(user2BtcBalance).to.equal(ethers.utils.parseEther('0'));
 
 		const btcAmount = ethers.utils.parseEther('5');
-		await exchange.connect(user2).executeLimitOrders(
+		await exchange.connect(user2).executeT0LimitOrders(
             [signatures[0]],
             [orders[0]],
 			btcAmount

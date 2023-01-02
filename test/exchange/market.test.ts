@@ -113,7 +113,7 @@ describe('exchange:market', function () {
 		expect(user2BtcBalance).to.equal(ethers.utils.parseEther('0'));
 
 		const usdtAmount = ethers.utils.parseEther('20000');
-		await exchange.connect(user2).executeMarketOrders(
+		await exchange.connect(user2).executeT1LimitOrders(
             [signatures[0], signatures[1]],
             [orders[0], orders[1]],
 			usdtAmount

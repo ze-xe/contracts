@@ -10,7 +10,8 @@ import "./interfaces/EIP20Interface.sol";
  * @author Compound
  */
 contract LendingMarket is BaseLendingMarket {
-    /** 
+
+    /**
      * @notice Initialize the new money market
      * @param underlying_ The address of the underlying asset
      * @param comptroller_ The address of the Comptroller
@@ -20,7 +21,7 @@ contract LendingMarket is BaseLendingMarket {
      * @param symbol_ ERC-20 symbol of this token
      * @param decimals_ ERC-20 decimal precision of this token
      */
-    constructor(
+    function initialize(
         address underlying_,
         ILever comptroller_,
         InterestRateModel interestRateModel_,
@@ -28,10 +29,11 @@ contract LendingMarket is BaseLendingMarket {
         string memory name_,
         string memory symbol_,
         uint8 decimals_
-    ) {
+    ) public {
         admin = payable(msg.sender);
+
         // CToken initialize does the bulk of the work
-        super.initialize(comptroller_, interestRateModel_, initialExchangeRateMantissa_, name_, symbol_, decimals_);
+        super.baseInitialize(comptroller_, interestRateModel_, initialExchangeRateMantissa_, name_, symbol_, decimals_);
 
         // Set underlying and sanity check it
         underlying = underlying_;
