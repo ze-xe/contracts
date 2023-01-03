@@ -15,8 +15,10 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
+
+contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using MathUpgradeable for uint256;
     using SafeMathUpgradeable for uint256;
@@ -30,6 +32,8 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
         __Ownable_init();
         __EIP712_init(__name, __version);
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /* -------------------------------------------------------------------------- */
     /*                              Public Functions                              */
