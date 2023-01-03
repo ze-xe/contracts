@@ -78,6 +78,8 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable, UUPSUp
         uint256 exchangeT1Amt = amountToFill.mul(uint256(order.exchangeRate)).div(10**18);
         uint256 calculatedMakerFee =  (amountToFill * makerFee).div(10**18);
         uint256 calculatedTakerFee = (exchangeT1Amt* takerFee).div(10**18);
+        
+        require(calculatedMakerFee < amountToFill || calculatedTakerFee <  exchangeT1Amt, "Total amount of fees are more than the price");
 
         IERC20Upgradeable(order.token0).transferFrom(seller, buyer, (amountToFill - calculatedMakerFee));
         IERC20Upgradeable(order.token0).transferFrom(seller, address(this), calculatedMakerFee);
