@@ -15,8 +15,10 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
+
+contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using MathUpgradeable for uint256;
     using SafeMathUpgradeable for uint256;
@@ -30,6 +32,8 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
         __Ownable_init();
         __EIP712_init(__name, __version);
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /* -------------------------------------------------------------------------- */
     /*                              Public Functions                              */
@@ -67,9 +71,12 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
             buyer = msg.sender;
         }
 
+        // IERC20Upgradeable(order.token0).transferFrom(seller, buyer, amountToFill);
+        // IERC20Upgradeable(order.token1).transferFrom(buyer, seller, amountToFill.mul(uint256(order.exchangeRate)).div(10**18));
+      
         // calulate token1 amount based on fillamount and exchange rate
-        IERC20Upgradeable(order.token0).transferFrom(seller, buyer, amountToFill);
-        IERC20Upgradeable(order.token1).transferFrom(buyer, seller, amountToFill.mul(uint256(order.exchangeRate)).div(10**18));
+      
+        exchangeInternal(order, msg.sender, amountToFill);
 
         orderFills[orderId] = alreadyFilledAmount.add(amountToFill);
         emit OrderExecuted(orderId, msg.sender, amountToFill);
@@ -92,8 +99,12 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
             uint amount = 0;
             if(orders[i].orderType == OrderType.BUY || orders[i].orderType == OrderType.SELL) {
                 amount = _executeLimitOrder(signatures[i], orders[i], token0AmountToFill);
-            } else {
+            } 
+            else if(orders[i].orderType == OrderType.LONG || orders[i].orderType == OrderType.SHORT)  {
                 amount = _executeT0LeverageOrder(signatures[i], orders[i], token0AmountToFill);
+            }
+            else {
+               revert("Order type not supported");
             }
             token0AmountToFill -= amount;
             if (token0AmountToFill == 0) {
@@ -119,8 +130,12 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
             uint amount = 0;
             if(orders[i].orderType == OrderType.BUY || orders[i].orderType == OrderType.SELL) {
                 amount = _executeLimitOrder(signatures[i], orders[i], token0AmountToFill);
-            } else {
+            }  
+            else if(orders[i].orderType == OrderType.LONG || orders[i].orderType == OrderType.SHORT) {
                 amount = _executeT0LeverageOrder(signatures[i], orders[i], token0AmountToFill);
+            }
+            else {
+               revert("Order type not supported");
             }
             token0AmountToFill -= amount;
             token1AmountToFill = token0AmountToFill.mul(orders[i].exchangeRate).div(1e18);
@@ -304,7 +319,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
         if(order.orderType == OrderType.BUY || order.orderType == OrderType.SELL){
             orderFills[orderId] = order.amount;
         } else if(order.orderType == OrderType.LONG || order.orderType == OrderType.SHORT) {
-            loopFills[orderId] = order.loops;
+            loopFills[orderId] = order.amount;
             loops[orderId] = order.loops;
         } else {
             revert("Order type not supported");
