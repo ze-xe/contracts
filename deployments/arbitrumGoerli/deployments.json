@@ -1,33 +1,33 @@
 {
   "contracts": {
     "Exchange": {
-      "address": "0x307608e16Bf1A3a628298070829d88F0CE4f744E",
+      "address": "0x148E6737ABf18Ef9F96F261808596F3140E73E1b",
       "abi": "Exchange",
       "constructorArguments": [
         "zexe",
-        "0.0.2"
+        "0.0.5"
       ]
     },
     "ZEXE": {
-      "address": "0x1fbd1c091032f3913B708956fEa799C2B58829eA",
+      "address": "0x62A17f3c6f4E0f6d3c3E8Cb7133452566aDe5762",
       "abi": "ZEXE",
       "constructorArguments": []
     },
     "Lever": {
-      "address": "0x889E82106943A3bF746735986FB89ae1A64105bb",
+      "address": "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
       "abi": "Lever",
       "constructorArguments": [
-        "0x307608e16Bf1A3a628298070829d88F0CE4f744E",
-        "0x1fbd1c091032f3913B708956fEa799C2B58829eA"
+        "0x148E6737ABf18Ef9F96F261808596F3140E73E1b",
+        "0x62A17f3c6f4E0f6d3c3E8Cb7133452566aDe5762"
       ]
     },
     "PriceOracle": {
-      "address": "0x3b5970B4fAda6E021a93E26b0bf757e20Ab79440",
+      "address": "0xCb971Ed09002fD50c12FE8B8a123E74C824b724C",
       "abi": "SimplePriceOracle",
       "constructorArguments": []
     },
     "lBTC_IRM": {
-      "address": "0xd02DD34ceC12C80c3b4bB9C7086Df4FD8Bc62ccd",
+      "address": "0xE95378284E18a6026017e4DA946CCC338A593a36",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -38,7 +38,7 @@
       ]
     },
     "BTC": {
-      "address": "0x30f12317e9517a31C1dF954d3f61E3F56bCA6692",
+      "address": "0xF37f0438c2795170140637707475fbBb9e555ee1",
       "abi": "TestERC20",
       "constructorArguments": [
         "Bitcoin",
@@ -46,12 +46,12 @@
       ]
     },
     "lBTC_Market": {
-      "address": "0xCA90035C3D1f27f3082Fb3a2715179D9137e1E2E",
+      "address": "0xf4dbaC888D78D3165B9b7652038b69093Bc9ad30",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0x30f12317e9517a31C1dF954d3f61E3F56bCA6692",
-        "0x889E82106943A3bF746735986FB89ae1A64105bb",
-        "0xd02DD34ceC12C80c3b4bB9C7086Df4FD8Bc62ccd",
+        "0xF37f0438c2795170140637707475fbBb9e555ee1",
+        "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
+        "0xE95378284E18a6026017e4DA946CCC338A593a36",
         "2000000000000000000",
         "Lever Bitcoin",
         "lBTC",
@@ -59,7 +59,7 @@
       ]
     },
     "lETH_IRM": {
-      "address": "0x5d23f129661747D1134f79bC0704106EF60a0C6f",
+      "address": "0xA97e5E3a040A2439fE8c76dF5adbA802551A5858",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -70,7 +70,7 @@
       ]
     },
     "ETH": {
-      "address": "0x244CCFAE6417a1296b80448f1DC667BD5184D618",
+      "address": "0xEaD133bEc58E0847f021c3bcf31830B2e07551dA",
       "abi": "TestERC20",
       "constructorArguments": [
         "Ethereum",
@@ -78,12 +78,12 @@
       ]
     },
     "lETH_Market": {
-      "address": "0x00697e4E1Ed207A224dC07Db2d17eCbdc27f4709",
+      "address": "0xC8E7BdD1cBfeF0f741Fd7e2f485e0d08aCf25e3d",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0x244CCFAE6417a1296b80448f1DC667BD5184D618",
-        "0x889E82106943A3bF746735986FB89ae1A64105bb",
-        "0x5d23f129661747D1134f79bC0704106EF60a0C6f",
+        "0xEaD133bEc58E0847f021c3bcf31830B2e07551dA",
+        "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
+        "0xA97e5E3a040A2439fE8c76dF5adbA802551A5858",
         "2000000000000000000",
         "Lever Ethereum",
         "lETH",
@@ -91,7 +91,7 @@
       ]
     },
     "lUSDC_IRM": {
-      "address": "0x50744781E7D3B23a3F305B640e03a30d118d3Da3",
+      "address": "0x939A8fEBfB629Aef37508d1840ddb4E675Ff8FF7",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -102,7 +102,7 @@
       ]
     },
     "USDC": {
-      "address": "0x59D34A96Df79425c6054Ed3e3aA018Da33a947E3",
+      "address": "0x4eb5249f665D31E1F4D81e395BACF242c625775b",
       "abi": "TestERC20",
       "constructorArguments": [
         "USD Coin",
@@ -110,12 +110,12 @@
       ]
     },
     "lUSDC_Market": {
-      "address": "0x4530aa7997e5690908571355F524d2071951201d",
+      "address": "0xB164Da8214819432C326FEF06abcdc35c61083BD",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0x59D34A96Df79425c6054Ed3e3aA018Da33a947E3",
-        "0x889E82106943A3bF746735986FB89ae1A64105bb",
-        "0x50744781E7D3B23a3F305B640e03a30d118d3Da3",
+        "0x4eb5249f665D31E1F4D81e395BACF242c625775b",
+        "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
+        "0x939A8fEBfB629Aef37508d1840ddb4E675Ff8FF7",
         "2000000000000000000",
         "Lever USD Coin",
         "lUSDC",
@@ -123,7 +123,7 @@
       ]
     },
     "lLINK_IRM": {
-      "address": "0x753d624e2323b52627716C77A1884f4EA3ffd794",
+      "address": "0x5A98a316f1b041DF676F69683aCBfDd577246EE9",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -134,7 +134,7 @@
       ]
     },
     "LINK": {
-      "address": "0x2B2feC526e905f531D76Cc1eAf54F2E7De51C70A",
+      "address": "0xc785082ad969080f9763639d810F05932A7805b4",
       "abi": "TestERC20",
       "constructorArguments": [
         "ChainLink",
@@ -142,12 +142,12 @@
       ]
     },
     "lLINK_Market": {
-      "address": "0x8d14A6dbeedc56f3fEE64F23f9f5C9A0A334Ea7e",
+      "address": "0xa6C951318D2512278fb9190Ea228cFBc50f59315",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0x2B2feC526e905f531D76Cc1eAf54F2E7De51C70A",
-        "0x889E82106943A3bF746735986FB89ae1A64105bb",
-        "0x753d624e2323b52627716C77A1884f4EA3ffd794",
+        "0xc785082ad969080f9763639d810F05932A7805b4",
+        "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
+        "0x5A98a316f1b041DF676F69683aCBfDd577246EE9",
         "2000000000000000000",
         "Lever ChainLink",
         "lLINK",
@@ -155,13 +155,42 @@
       ]
     },
     "Multicall2": {
-      "address": "0x86755a2D792BD0f61E7Bac582424C3A354a33944",
+      "address": "0x86207c15BcC962374B112A18a1e3129B8EEBdC07",
       "abi": "Multicall2",
       "constructorArguments": []
     }
   },
   "sources": {
     "Exchange": [
+      {
+        "type": "event",
+        "anonymous": false,
+        "name": "AdminChanged",
+        "inputs": [
+          {
+            "type": "address",
+            "name": "previousAdmin",
+            "indexed": false
+          },
+          {
+            "type": "address",
+            "name": "newAdmin",
+            "indexed": false
+          }
+        ]
+      },
+      {
+        "type": "event",
+        "anonymous": false,
+        "name": "BeaconUpgraded",
+        "inputs": [
+          {
+            "type": "address",
+            "name": "beacon",
+            "indexed": true
+          }
+        ]
+      },
       {
         "type": "event",
         "anonymous": false,
@@ -272,6 +301,18 @@
           {
             "type": "address",
             "name": "newOwner",
+            "indexed": true
+          }
+        ]
+      },
+      {
+        "type": "event",
+        "anonymous": false,
+        "name": "Upgraded",
+        "inputs": [
+          {
+            "type": "address",
+            "name": "implementation",
             "indexed": true
           }
         ]
@@ -777,6 +818,19 @@
       },
       {
         "type": "function",
+        "name": "proxiableUUID",
+        "constant": true,
+        "stateMutability": "view",
+        "payable": false,
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "bytes32"
+          }
+        ]
+      },
+      {
+        "type": "function",
         "name": "redeem",
         "constant": false,
         "payable": false,
@@ -899,6 +953,37 @@
           {
             "type": "address",
             "name": "newOwner"
+          }
+        ],
+        "outputs": []
+      },
+      {
+        "type": "function",
+        "name": "upgradeTo",
+        "constant": false,
+        "payable": false,
+        "inputs": [
+          {
+            "type": "address",
+            "name": "newImplementation"
+          }
+        ],
+        "outputs": []
+      },
+      {
+        "type": "function",
+        "name": "upgradeToAndCall",
+        "constant": false,
+        "stateMutability": "payable",
+        "payable": true,
+        "inputs": [
+          {
+            "type": "address",
+            "name": "newImplementation"
+          },
+          {
+            "type": "bytes",
+            "name": "data"
           }
         ],
         "outputs": []

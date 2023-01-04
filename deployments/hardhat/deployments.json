@@ -1,33 +1,33 @@
 {
   "contracts": {
     "Exchange": {
-      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
       "abi": "Exchange",
       "constructorArguments": [
         "zexe",
-        "0.0.4"
+        "0.0.6"
       ]
     },
     "ZEXE": {
-      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
       "abi": "ZEXE",
       "constructorArguments": []
     },
     "Lever": {
-      "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
       "abi": "Lever",
       "constructorArguments": [
-        "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-        "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+        "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
       ]
     },
     "PriceOracle": {
-      "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+      "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
       "abi": "SimplePriceOracle",
       "constructorArguments": []
     },
     "lBTC_IRM": {
-      "address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+      "address": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -38,7 +38,7 @@
       ]
     },
     "BTC": {
-      "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+      "address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
       "abi": "TestERC20",
       "constructorArguments": [
         "Bitcoin",
@@ -49,9 +49,9 @@
       "address": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
-        "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
         "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+        "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+        "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
         "2000000000000000000",
         "Lever Bitcoin",
         "lBTC",
@@ -82,7 +82,7 @@
       "abi": "LendingMarket",
       "constructorArguments": [
         "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
-        "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+        "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
         "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
         "2000000000000000000",
         "Lever Ethereum",
@@ -114,7 +114,7 @@
       "abi": "LendingMarket",
       "constructorArguments": [
         "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
-        "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+        "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
         "0xc5a5C42992dECbae36851359345FE25997F5C42d",
         "2000000000000000000",
         "Lever USD Coin",
@@ -146,7 +146,7 @@
       "abi": "LendingMarket",
       "constructorArguments": [
         "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
-        "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+        "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
         "0xf5059a5D33d5853360D16C683c16e67980206f36",
         "2000000000000000000",
         "Lever ChainLink",
@@ -162,6 +162,35 @@
   },
   "sources": {
     "Exchange": [
+      {
+        "type": "event",
+        "anonymous": false,
+        "name": "AdminChanged",
+        "inputs": [
+          {
+            "type": "address",
+            "name": "previousAdmin",
+            "indexed": false
+          },
+          {
+            "type": "address",
+            "name": "newAdmin",
+            "indexed": false
+          }
+        ]
+      },
+      {
+        "type": "event",
+        "anonymous": false,
+        "name": "BeaconUpgraded",
+        "inputs": [
+          {
+            "type": "address",
+            "name": "beacon",
+            "indexed": true
+          }
+        ]
+      },
       {
         "type": "event",
         "anonymous": false,
@@ -272,6 +301,18 @@
           {
             "type": "address",
             "name": "newOwner",
+            "indexed": true
+          }
+        ]
+      },
+      {
+        "type": "event",
+        "anonymous": false,
+        "name": "Upgraded",
+        "inputs": [
+          {
+            "type": "address",
+            "name": "implementation",
             "indexed": true
           }
         ]
@@ -794,6 +835,20 @@
       },
       {
         "type": "function",
+        "name": "proxiableUUID",
+        "constant": true,
+        "stateMutability": "view",
+        "payable": false,
+        "gas": 29000000,
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "bytes32"
+          }
+        ]
+      },
+      {
+        "type": "function",
         "name": "redeem",
         "constant": false,
         "payable": false,
@@ -924,6 +979,39 @@
           {
             "type": "address",
             "name": "newOwner"
+          }
+        ],
+        "outputs": []
+      },
+      {
+        "type": "function",
+        "name": "upgradeTo",
+        "constant": false,
+        "payable": false,
+        "gas": 29000000,
+        "inputs": [
+          {
+            "type": "address",
+            "name": "newImplementation"
+          }
+        ],
+        "outputs": []
+      },
+      {
+        "type": "function",
+        "name": "upgradeToAndCall",
+        "constant": false,
+        "stateMutability": "payable",
+        "payable": true,
+        "gas": 29000000,
+        "inputs": [
+          {
+            "type": "address",
+            "name": "newImplementation"
+          },
+          {
+            "type": "bytes",
+            "name": "data"
           }
         ],
         "outputs": []
