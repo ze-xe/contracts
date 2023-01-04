@@ -1,33 +1,33 @@
 {
   "contracts": {
     "Exchange": {
-      "address": "0x148E6737ABf18Ef9F96F261808596F3140E73E1b",
+      "address": "0x39239B8d244ddE6149F88568c862c2cfc8B4c6CE",
       "abi": "Exchange",
       "constructorArguments": [
         "zexe",
-        "0.0.5"
+        "0.0.6"
       ]
     },
     "ZEXE": {
-      "address": "0x62A17f3c6f4E0f6d3c3E8Cb7133452566aDe5762",
+      "address": "0xEbD9e599A758A729cb1187Ede15bD0924F731cAd",
       "abi": "ZEXE",
       "constructorArguments": []
     },
     "Lever": {
-      "address": "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
+      "address": "0xDf8279eC5635c57a8bDa92baB89073585c921f52",
       "abi": "Lever",
       "constructorArguments": [
-        "0x148E6737ABf18Ef9F96F261808596F3140E73E1b",
-        "0x62A17f3c6f4E0f6d3c3E8Cb7133452566aDe5762"
+        "0x39239B8d244ddE6149F88568c862c2cfc8B4c6CE",
+        "0xEbD9e599A758A729cb1187Ede15bD0924F731cAd"
       ]
     },
     "PriceOracle": {
-      "address": "0xCb971Ed09002fD50c12FE8B8a123E74C824b724C",
+      "address": "0xe72419b63B9511321abDa05d7a6403DC44E69C31",
       "abi": "SimplePriceOracle",
       "constructorArguments": []
     },
     "lBTC_IRM": {
-      "address": "0xE95378284E18a6026017e4DA946CCC338A593a36",
+      "address": "0x08b32bfa4F3C77fdaB8DaDAd0416DBaE30D754a8",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -38,7 +38,7 @@
       ]
     },
     "BTC": {
-      "address": "0xF37f0438c2795170140637707475fbBb9e555ee1",
+      "address": "0x9a44393c07feaF4f4f18491ffD54D4EAb3c63E18",
       "abi": "TestERC20",
       "constructorArguments": [
         "Bitcoin",
@@ -46,12 +46,12 @@
       ]
     },
     "lBTC_Market": {
-      "address": "0xf4dbaC888D78D3165B9b7652038b69093Bc9ad30",
+      "address": "0xC894Fd2242AdF53A8b9418eC828A95CEA45b0390",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0xF37f0438c2795170140637707475fbBb9e555ee1",
-        "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
-        "0xE95378284E18a6026017e4DA946CCC338A593a36",
+        "0x9a44393c07feaF4f4f18491ffD54D4EAb3c63E18",
+        "0xDf8279eC5635c57a8bDa92baB89073585c921f52",
+        "0x08b32bfa4F3C77fdaB8DaDAd0416DBaE30D754a8",
         "2000000000000000000",
         "Lever Bitcoin",
         "lBTC",
@@ -59,7 +59,7 @@
       ]
     },
     "lETH_IRM": {
-      "address": "0xA97e5E3a040A2439fE8c76dF5adbA802551A5858",
+      "address": "0x4cB4Ef77747f9EF7e3bAceffcDEd043288080cBf",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -70,7 +70,7 @@
       ]
     },
     "ETH": {
-      "address": "0xEaD133bEc58E0847f021c3bcf31830B2e07551dA",
+      "address": "0x6C885693464447930b7fD9bfb817Af01Ca86d036",
       "abi": "TestERC20",
       "constructorArguments": [
         "Ethereum",
@@ -78,12 +78,12 @@
       ]
     },
     "lETH_Market": {
-      "address": "0xC8E7BdD1cBfeF0f741Fd7e2f485e0d08aCf25e3d",
+      "address": "0x64702b0FDe1A98Ca06C2F02f13A5196ceEdA6FAC",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0xEaD133bEc58E0847f021c3bcf31830B2e07551dA",
-        "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
-        "0xA97e5E3a040A2439fE8c76dF5adbA802551A5858",
+        "0x6C885693464447930b7fD9bfb817Af01Ca86d036",
+        "0xDf8279eC5635c57a8bDa92baB89073585c921f52",
+        "0x4cB4Ef77747f9EF7e3bAceffcDEd043288080cBf",
         "2000000000000000000",
         "Lever Ethereum",
         "lETH",
@@ -91,7 +91,7 @@
       ]
     },
     "lUSDC_IRM": {
-      "address": "0x939A8fEBfB629Aef37508d1840ddb4E675Ff8FF7",
+      "address": "0xD7D265A3Aeb2DCAB83492BB389886aA909Dc0BF9",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -102,7 +102,7 @@
       ]
     },
     "USDC": {
-      "address": "0x4eb5249f665D31E1F4D81e395BACF242c625775b",
+      "address": "0x749639f723AB0D9563d6a1c8EF2a3C3aCa026b3d",
       "abi": "TestERC20",
       "constructorArguments": [
         "USD Coin",
@@ -110,12 +110,12 @@
       ]
     },
     "lUSDC_Market": {
-      "address": "0xB164Da8214819432C326FEF06abcdc35c61083BD",
+      "address": "0x196f053669cC6494670f7e866f2D1F770B41CCb7",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0x4eb5249f665D31E1F4D81e395BACF242c625775b",
-        "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
-        "0x939A8fEBfB629Aef37508d1840ddb4E675Ff8FF7",
+        "0x749639f723AB0D9563d6a1c8EF2a3C3aCa026b3d",
+        "0xDf8279eC5635c57a8bDa92baB89073585c921f52",
+        "0xD7D265A3Aeb2DCAB83492BB389886aA909Dc0BF9",
         "2000000000000000000",
         "Lever USD Coin",
         "lUSDC",
@@ -123,7 +123,7 @@
       ]
     },
     "lLINK_IRM": {
-      "address": "0x5A98a316f1b041DF676F69683aCBfDd577246EE9",
+      "address": "0xaD4fA445FB2fD2f3993712988bF9c42890eD4f6B",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -134,7 +134,7 @@
       ]
     },
     "LINK": {
-      "address": "0xc785082ad969080f9763639d810F05932A7805b4",
+      "address": "0x3d180C80722c0737C0FC89EEdaB78fAbc2666E0E",
       "abi": "TestERC20",
       "constructorArguments": [
         "ChainLink",
@@ -142,12 +142,12 @@
       ]
     },
     "lLINK_Market": {
-      "address": "0xa6C951318D2512278fb9190Ea228cFBc50f59315",
+      "address": "0x919C66025B95Bb467b70fBC888B540c54dFdc5Ab",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0xc785082ad969080f9763639d810F05932A7805b4",
-        "0x7d1a5Eb2d502b120Dc905613278EDB80cbA03052",
-        "0x5A98a316f1b041DF676F69683aCBfDd577246EE9",
+        "0x3d180C80722c0737C0FC89EEdaB78fAbc2666E0E",
+        "0xDf8279eC5635c57a8bDa92baB89073585c921f52",
+        "0xaD4fA445FB2fD2f3993712988bF9c42890eD4f6B",
         "2000000000000000000",
         "Lever ChainLink",
         "lLINK",
@@ -155,7 +155,7 @@
       ]
     },
     "Multicall2": {
-      "address": "0x86207c15BcC962374B112A18a1e3129B8EEBdC07",
+      "address": "0xC52a5D7Fab9AF2dc29eAE402a4eB6FF164094dA8",
       "abi": "Multicall2",
       "constructorArguments": []
     }
@@ -936,6 +936,19 @@
         "name": "takerFee",
         "constant": true,
         "stateMutability": "view",
+        "payable": false,
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "uint256"
+          }
+        ]
+      },
+      {
+        "type": "function",
+        "name": "test123",
+        "constant": true,
+        "stateMutability": "pure",
         "payable": false,
         "inputs": [],
         "outputs": [

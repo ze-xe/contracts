@@ -74,22 +74,25 @@ abstract contract BaseExchange {
             seller = order.maker;
             buyer = taker;
         }
-     
-        uint256 exchangeT1Amt = token0amount.mul(uint256(order.exchangeRate)).div(10**18);
-        uint256 calculatedMakerFee =  (token0amount * makerFee).div(10**18);
-        uint256 calculatedTakerFee = (exchangeT1Amt * takerFee).div(10**18);
 
-        require(calculatedMakerFee < token0amount || calculatedTakerFee <  exchangeT1Amt, "Total amount of fees are more than exchange amount");
+        // CASE : 1 BTC -> 10000 USDC
+        // maker: 0.9 BTC // 10% maker fee
+        // taket: 8000 USDC // 20% taker fee
+        uint256 calculatedMakerFee = token0amount.mul(makerFee).div(10**18); // 0.1 BTC
+        uint256 exchangeT0Amount = token0amount.sub(calculatedMakerFee); // 0.9 BTC
 
-        IERC20Upgradeable(order.token0).transferFrom(seller, buyer, (token0amount - calculatedMakerFee));
+        uint256 token1Amount = token0amount.mul(uint256(order.exchangeRate)).div(10**18); // 10000 USDC
+        uint256 calculatedTakerFee = token1Amount.mul(takerFee).div(1e18);  // 2000 USDC
+        uint256 exchangeT1Amount = token1Amount.sub(calculatedTakerFee); // 8000 USDC
+
+        IERC20Upgradeable(order.token0).transferFrom(seller, buyer, exchangeT0Amount);
         IERC20Upgradeable(order.token0).transferFrom(seller, address(this), calculatedMakerFee);
-        IERC20Upgradeable(order.token1).transferFrom(buyer, seller, (exchangeT1Amt - calculatedTakerFee));
+        IERC20Upgradeable(order.token1).transferFrom(buyer, seller, exchangeT1Amount);
         IERC20Upgradeable(order.token1).transferFrom(buyer, address(this), calculatedTakerFee);
 
-     //     // actual transfer
-     //     IERC20Upgradeable(order.token0).transferFrom(seller, buyer, token0amount);
-     //     IERC20Upgradeable(order.token1).transferFrom(buyer, seller, token0amount.mul(order.exchangeRate).div(10**18));
-    
+        // actual transfer
+        // IERC20Upgradeable(order.token0).transferFrom(seller, buyer, token0amount);
+        // IERC20Upgradeable(order.token1).transferFrom(buyer, seller, token0amount.mul(order.exchangeRate).div(10**18));
     }
 
     function leverageInternal(
