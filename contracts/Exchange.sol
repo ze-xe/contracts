@@ -14,26 +14,49 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 
-contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
+contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using MathUpgradeable for uint256;
     using SafeMathUpgradeable for uint256;
-    
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
     /**
      * @dev Initialize the contract
      * @param __name Name of the contract
      * @param __version Version of the contract
      */
-    function initialize(string memory __name, string memory __version) public initializer {
-        __Ownable_init();
+    function initialize(string memory __name, string memory __version, address _admin, address _pauser, address _upgradeAdmin) public initializer {
+        __Pausable_init();
+        __AccessControl_init();
         __EIP712_init(__name, __version);
+
+        _grantRole(ADMIN_ROLE, _admin);
+        _grantRole(PAUSER_ROLE, _pauser);
+        _grantRole(UPGRADER_ROLE, _upgradeAdmin);
     }
 
-    function _authorizeUpgrade(address) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        onlyRole(UPGRADER_ROLE)
+        override
+    {}
+
+    function pause() public onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() public onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
 
     /* -------------------------------------------------------------------------- */
     /*                              Public Functions                              */
@@ -383,7 +406,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable, UUPSUp
      * @param token Token to enable
      * @param cToken cToken of the token
      */
-    function enableMarginTrading(address token, address cToken) external onlyOwner {
+    function enableMarginTrading(address token, address cToken) external onlyRole(ADMIN_ROLE) {
         assetToMarket[token] = LendingMarket(cToken);
         require(LendingMarket(cToken).underlying() == token, "Invalid cToken");
         emit MarginEnabled(token, cToken);
@@ -394,7 +417,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable, UUPSUp
      * @param token Token to set
      * @param amount Minimum amount of token
      */
-    function setMinTokenAmount(address token, uint amount) external onlyOwner {
+    function setMinTokenAmount(address token, uint amount) external onlyRole(ADMIN_ROLE) {
         minTokenAmount[token] = amount;
         emit MinTokenAmountSet(token, amount);
     }
@@ -404,7 +427,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable, UUPSUp
      * @param _makerFee Maker fee
      * @param _takerFee Taker fee
      */
-    function setFees(uint _makerFee, uint _takerFee) external onlyOwner {
+    function setFees(uint _makerFee, uint _takerFee) external onlyRole(ADMIN_ROLE)  {
         makerFee = _makerFee;
         takerFee = _takerFee;
         emit FeesSet(_makerFee, _takerFee);

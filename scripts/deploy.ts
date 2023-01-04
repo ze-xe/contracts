@@ -22,7 +22,7 @@ export async function deploy(logs = false) {
 	// Exchange
 	const exchange = await _deploy(
 		"Exchange",
-		[config.name, config.version],
+		[config.name, config.version, process.env.ADMIN_ADDRESS , process.env.PAUSER_ADDRESS, process.env.UPGRADEADMIN_ADDRESS],
 		deployments,
 		{upgradable: true}
 	);
@@ -129,7 +129,7 @@ const _deploy = async (
 ) => {
 	const Contract = await ethers.getContractFactory(contractName);
 	let contract;
-	if (upgradable) {
+	if (upgradable) { 
 		contract = await upgrades.deployProxy(Contract, args, {type: 'uups'});
 	} else {
 		contract = await Contract.deploy(...args);
