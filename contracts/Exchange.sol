@@ -239,6 +239,53 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
     }
 
     /**
+     * @notice Executed leverage order with limit orders
+     */
+    function executeLeverageWithLimitOrders(
+        bytes[] memory limitOrderSignatures,
+        Order[] memory limitOrders,
+        bytes memory signature,
+        Order memory order
+    ) external {
+        // TODO
+        // require(limitOrderSignatures.length == limitOrders.length, "Invalid limit order signatures");
+        // require(limitOrders.length > 0, "No limit orders");
+        // bytes32 orderId = verifyOrderHash(signature, order);
+        // require(validateOrder(order), "Invalid order");
+
+        // uint limitOrderExecIndex = 0;
+        // uint limitOrdersLength = limitOrders.length;
+
+        // for(uint i = loops[orderId]; i < order.loops; i++){
+        //     uint thisLoopLimitFill = scaledByBorrowLimit(order.amount, order.borrowLimit, i+1);
+        //     uint thisLoopFill = loopFills[orderId];
+        //     if(thisLoopFill == 0){
+        //         leverageInternal(assetToMarket[order.token0], assetToMarket[order.token1], thisLoopLimitFill, order);
+        //     }
+            
+        //     uint amountToFillInThisLoop = thisLoopLimitFill - thisLoopFill;
+
+        //     // Tokens to transfer in this loop
+        //     for(uint j = limitOrderExecIndex; j < limitOrdersLength; j++){
+                
+        //     }
+        //     uint amount = _executeLimitOrder(limitOrderSignatures, limitOrders, amountToFillInThisLoop);
+        //     loopFills[orderId] += amount;
+        //     amountToFillInThisLoop = amountToFillInThisLoop.sub(amount);
+
+        //     if(thisLoopFill + amountToFillInThisLoop == thisLoopLimitFill){
+        //         loops[orderId] += 1;
+        //         loopFills[orderId] = 0;
+        //     }
+
+        //     // If no/min fill amount left
+        //     if(amountToFillInThisLoop <= minTokenAmount[order.token0]){
+        //         break;
+        //     }
+        // }
+    }
+
+    /**
      * @dev Cancel an order
      * @param signature Signature of the order
      * @param order Order struct

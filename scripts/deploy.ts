@@ -26,6 +26,7 @@ export async function deploy(logs = false) {
 		deployments,
 		{upgradable: true}
 	);
+  await exchange.setFees(inEth(config.makerFee), inEth(config.takerFee));
 
 	// ZEXE Token
 	const zexe = await _deploy("ZEXE", [], deployments);

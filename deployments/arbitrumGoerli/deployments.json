@@ -1,33 +1,33 @@
 {
   "contracts": {
     "Exchange": {
-      "address": "0x797E7Bc8641b55bfA38331949221676df3982785",
+      "address": "0x307608e16Bf1A3a628298070829d88F0CE4f744E",
       "abi": "Exchange",
       "constructorArguments": [
         "zexe",
-        "0.0.1"
+        "0.0.2"
       ]
     },
     "ZEXE": {
-      "address": "0x47ab7F5Ee4419703f33Dd154DD4d5Ad88a2490AD",
+      "address": "0x1fbd1c091032f3913B708956fEa799C2B58829eA",
       "abi": "ZEXE",
       "constructorArguments": []
     },
     "Lever": {
-      "address": "0x223eF15A952607b24624180f86d0A6C9ae30AB47",
+      "address": "0x889E82106943A3bF746735986FB89ae1A64105bb",
       "abi": "Lever",
       "constructorArguments": [
-        "0x797E7Bc8641b55bfA38331949221676df3982785",
-        "0x47ab7F5Ee4419703f33Dd154DD4d5Ad88a2490AD"
+        "0x307608e16Bf1A3a628298070829d88F0CE4f744E",
+        "0x1fbd1c091032f3913B708956fEa799C2B58829eA"
       ]
     },
     "PriceOracle": {
-      "address": "0x8246168Ff70411C4727E0Aa9984577511EB4B607",
+      "address": "0x3b5970B4fAda6E021a93E26b0bf757e20Ab79440",
       "abi": "SimplePriceOracle",
       "constructorArguments": []
     },
     "lBTC_IRM": {
-      "address": "0x1F003dC6676e59cA0391F1cef7F31Bf3CC14fca1",
+      "address": "0xd02DD34ceC12C80c3b4bB9C7086Df4FD8Bc62ccd",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -38,7 +38,7 @@
       ]
     },
     "BTC": {
-      "address": "0xF3BF9eC55f9Af8b2f865865A58b325d2e9bAC01A",
+      "address": "0x30f12317e9517a31C1dF954d3f61E3F56bCA6692",
       "abi": "TestERC20",
       "constructorArguments": [
         "Bitcoin",
@@ -46,12 +46,12 @@
       ]
     },
     "lBTC_Market": {
-      "address": "0x6cfceBb95990B8D36aa0AFB774E5Ad7cd6026410",
+      "address": "0xCA90035C3D1f27f3082Fb3a2715179D9137e1E2E",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0xF3BF9eC55f9Af8b2f865865A58b325d2e9bAC01A",
-        "0x223eF15A952607b24624180f86d0A6C9ae30AB47",
-        "0x1F003dC6676e59cA0391F1cef7F31Bf3CC14fca1",
+        "0x30f12317e9517a31C1dF954d3f61E3F56bCA6692",
+        "0x889E82106943A3bF746735986FB89ae1A64105bb",
+        "0xd02DD34ceC12C80c3b4bB9C7086Df4FD8Bc62ccd",
         "2000000000000000000",
         "Lever Bitcoin",
         "lBTC",
@@ -59,7 +59,7 @@
       ]
     },
     "lETH_IRM": {
-      "address": "0x4a20ADc20f3FCA38BDB0880251218EC0299EC5Cf",
+      "address": "0x5d23f129661747D1134f79bC0704106EF60a0C6f",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -70,7 +70,7 @@
       ]
     },
     "ETH": {
-      "address": "0x440EDcB6e34E65177c2778A9De35c0bc01b6B5ef",
+      "address": "0x244CCFAE6417a1296b80448f1DC667BD5184D618",
       "abi": "TestERC20",
       "constructorArguments": [
         "Ethereum",
@@ -78,12 +78,12 @@
       ]
     },
     "lETH_Market": {
-      "address": "0x0256D889E2c921a08C3c5BBEDfAC448c95479784",
+      "address": "0x00697e4E1Ed207A224dC07Db2d17eCbdc27f4709",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0x440EDcB6e34E65177c2778A9De35c0bc01b6B5ef",
-        "0x223eF15A952607b24624180f86d0A6C9ae30AB47",
-        "0x4a20ADc20f3FCA38BDB0880251218EC0299EC5Cf",
+        "0x244CCFAE6417a1296b80448f1DC667BD5184D618",
+        "0x889E82106943A3bF746735986FB89ae1A64105bb",
+        "0x5d23f129661747D1134f79bC0704106EF60a0C6f",
         "2000000000000000000",
         "Lever Ethereum",
         "lETH",
@@ -91,7 +91,7 @@
       ]
     },
     "lUSDC_IRM": {
-      "address": "0x67a5eecaB56d5447734A3d71eD942170fe0Da34C",
+      "address": "0x50744781E7D3B23a3F305B640e03a30d118d3Da3",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -102,7 +102,7 @@
       ]
     },
     "USDC": {
-      "address": "0xAfbFE0020884D6c9e389040ff47B6a6dC21C26AC",
+      "address": "0x59D34A96Df79425c6054Ed3e3aA018Da33a947E3",
       "abi": "TestERC20",
       "constructorArguments": [
         "USD Coin",
@@ -110,12 +110,12 @@
       ]
     },
     "lUSDC_Market": {
-      "address": "0x5b9E40602C6e3CdeC770B07CC177141B7b2D9ed3",
+      "address": "0x4530aa7997e5690908571355F524d2071951201d",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0xAfbFE0020884D6c9e389040ff47B6a6dC21C26AC",
-        "0x223eF15A952607b24624180f86d0A6C9ae30AB47",
-        "0x67a5eecaB56d5447734A3d71eD942170fe0Da34C",
+        "0x59D34A96Df79425c6054Ed3e3aA018Da33a947E3",
+        "0x889E82106943A3bF746735986FB89ae1A64105bb",
+        "0x50744781E7D3B23a3F305B640e03a30d118d3Da3",
         "2000000000000000000",
         "Lever USD Coin",
         "lUSDC",
@@ -123,7 +123,7 @@
       ]
     },
     "lLINK_IRM": {
-      "address": "0xefE8B1f9c49b5ABaCC48B7eB377378b8aaBF6fD8",
+      "address": "0x753d624e2323b52627716C77A1884f4EA3ffd794",
       "abi": "JumpRateModelV2",
       "constructorArguments": [
         "50000000000000000",
@@ -134,7 +134,7 @@
       ]
     },
     "LINK": {
-      "address": "0xb34cd32e9eba40aAfcCd5b25509CcC476F7Cd7b1",
+      "address": "0x2B2feC526e905f531D76Cc1eAf54F2E7De51C70A",
       "abi": "TestERC20",
       "constructorArguments": [
         "ChainLink",
@@ -142,12 +142,12 @@
       ]
     },
     "lLINK_Market": {
-      "address": "0x1Fdd8D7e0c6532a3E5f85e1f3B499c7B84793Ca8",
+      "address": "0x8d14A6dbeedc56f3fEE64F23f9f5C9A0A334Ea7e",
       "abi": "LendingMarket",
       "constructorArguments": [
-        "0xb34cd32e9eba40aAfcCd5b25509CcC476F7Cd7b1",
-        "0x223eF15A952607b24624180f86d0A6C9ae30AB47",
-        "0xefE8B1f9c49b5ABaCC48B7eB377378b8aaBF6fD8",
+        "0x2B2feC526e905f531D76Cc1eAf54F2E7De51C70A",
+        "0x889E82106943A3bF746735986FB89ae1A64105bb",
+        "0x753d624e2323b52627716C77A1884f4EA3ffd794",
         "2000000000000000000",
         "Lever ChainLink",
         "lLINK",
@@ -155,7 +155,7 @@
       ]
     },
     "Multicall2": {
-      "address": "0xd3fD4c3e7D21f5f1C55A3B8ffa70d02441C3EB7B",
+      "address": "0x86755a2D792BD0f61E7Bac582424C3A354a33944",
       "abi": "Multicall2",
       "constructorArguments": []
     }
@@ -424,6 +424,107 @@
           {
             "type": "address",
             "name": "cToken"
+          }
+        ],
+        "outputs": []
+      },
+      {
+        "type": "function",
+        "name": "executeLeverageWithLimitOrders",
+        "constant": false,
+        "payable": false,
+        "inputs": [
+          {
+            "type": "bytes[]",
+            "name": "limitOrderSignatures"
+          },
+          {
+            "type": "tuple[]",
+            "name": "limitOrders",
+            "components": [
+              {
+                "type": "address",
+                "name": "maker"
+              },
+              {
+                "type": "address",
+                "name": "token0"
+              },
+              {
+                "type": "address",
+                "name": "token1"
+              },
+              {
+                "type": "uint256",
+                "name": "amount"
+              },
+              {
+                "type": "uint8",
+                "name": "orderType"
+              },
+              {
+                "type": "uint32",
+                "name": "salt"
+              },
+              {
+                "type": "uint176",
+                "name": "exchangeRate"
+              },
+              {
+                "type": "uint32",
+                "name": "borrowLimit"
+              },
+              {
+                "type": "uint8",
+                "name": "loops"
+              }
+            ]
+          },
+          {
+            "type": "bytes",
+            "name": "signature"
+          },
+          {
+            "type": "tuple",
+            "name": "order",
+            "components": [
+              {
+                "type": "address",
+                "name": "maker"
+              },
+              {
+                "type": "address",
+                "name": "token0"
+              },
+              {
+                "type": "address",
+                "name": "token1"
+              },
+              {
+                "type": "uint256",
+                "name": "amount"
+              },
+              {
+                "type": "uint8",
+                "name": "orderType"
+              },
+              {
+                "type": "uint32",
+                "name": "salt"
+              },
+              {
+                "type": "uint176",
+                "name": "exchangeRate"
+              },
+              {
+                "type": "uint32",
+                "name": "borrowLimit"
+              },
+              {
+                "type": "uint8",
+                "name": "loops"
+              }
+            ]
           }
         ],
         "outputs": []
