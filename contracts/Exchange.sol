@@ -75,16 +75,8 @@ contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable, UUPSUp
         // IERC20Upgradeable(order.token1).transferFrom(buyer, seller, amountToFill.mul(uint256(order.exchangeRate)).div(10**18));
       
         // calulate token1 amount based on fillamount and exchange rate
-        uint256 exchangeT1Amt = amountToFill.mul(uint256(order.exchangeRate)).div(10**18);
-        uint256 calculatedMakerFee =  (amountToFill * makerFee).div(10**18);
-        uint256 calculatedTakerFee = (exchangeT1Amt* takerFee).div(10**18);
-
-        require(calculatedMakerFee < amountToFill || calculatedTakerFee <  exchangeT1Amt, "Total amount of fees are more than exchange amount");
-
-        IERC20Upgradeable(order.token0).transferFrom(seller, buyer, (amountToFill - calculatedMakerFee));
-        IERC20Upgradeable(order.token0).transferFrom(seller, address(this), calculatedMakerFee);
-        IERC20Upgradeable(order.token1).transferFrom(buyer, seller, (exchangeT1Amt - calculatedTakerFee));
-        IERC20Upgradeable(order.token1).transferFrom(buyer, address(this), calculatedTakerFee);
+      
+        exchangeInternal(order, msg.sender, amountToFill);
 
         orderFills[orderId] = alreadyFilledAmount.add(amountToFill);
         emit OrderExecuted(orderId, msg.sender, amountToFill);

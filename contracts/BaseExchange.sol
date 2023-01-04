@@ -64,7 +64,7 @@ abstract contract BaseExchange {
         Order memory order,
         address taker,
         uint token0amount
-    ) internal {
+     ) internal {
         // set buyer and seller as if order is BUY
         address buyer = order.maker;
         address seller = taker;
@@ -74,10 +74,24 @@ abstract contract BaseExchange {
             seller = order.maker;
             buyer = taker;
         }
+     
+        uint256 exchangeT1Amt = token0amount.mul(uint256(order.exchangeRate)).div(10**18);
+        uint256 calculatedMakerFee =  (token0amount * makerFee).div(10**18);
+        uint256 calculatedTakerFee = (exchangeT1Amt* takerFee).div(10**18);
 
-        // actual transfer
-        IERC20Upgradeable(order.token0).transferFrom(seller, buyer, token0amount);
-        IERC20Upgradeable(order.token1).transferFrom(buyer, seller, token0amount.mul(order.exchangeRate).div(10**18));
+        require(calculatedMakerFee < token0amount || calculatedTakerFee <  exchangeT1Amt, "Total amount of fees are more than exchange amount");
+
+        IERC20Upgradeable(order.token0).transferFrom(seller, buyer, (token0amount - calculatedMakerFee));
+        IERC20Upgradeable(order.token0).transferFrom(seller, address(this), calculatedMakerFee);
+        IERC20Upgradeable(order.token1).transferFrom(buyer, seller, (exchangeT1Amt - calculatedTakerFee));
+        IERC20Upgradeable(order.token1).transferFrom(buyer, address(this), calculatedTakerFee);
+
+
+
+     //     // actual transfer
+     //     IERC20Upgradeable(order.token0).transferFrom(seller, buyer, token0amount);
+     //     IERC20Upgradeable(order.token1).transferFrom(buyer, seller, token0amount.mul(order.exchangeRate).div(10**18));
+    
     }
 
     function leverageInternal(
@@ -85,7 +99,7 @@ abstract contract BaseExchange {
         LendingMarket ctoken1,
         uint amount0,
         Order memory order
-    ) internal {
+     ) internal {
         // token 0: supply token0 -> borrow token1 -> swap token1 to token0 -> repeat
         // SHORT token 0: supply token1 -> borrow token0 -> swap token0 to token1 -> repeat
         LendingMarket supplyToken = ctoken0;
@@ -209,5 +223,13 @@ abstract contract BaseExchange {
         }
         require(success, "TOKEN_TRANSFER_OUT_FAILED");
     }
+
+
+    // function Withdraw() external nonReentrant onlyOwner{
+    //      IERC20 token = IERC20(TenkaAdd);
+    //        token.transfer(owner(), getTokenBalance(address(this)));
+    //      payable(owner()).transfer(getEtherBalance(address(this)));
+    
+    // } 
 
 }
