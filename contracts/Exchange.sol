@@ -40,6 +40,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
         __EIP712_init(__name, __version);
 
         _grantRole(ADMIN_ROLE, _admin);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, _pauser);
         _grantRole(UPGRADER_ROLE, _upgradeAdmin);
     }

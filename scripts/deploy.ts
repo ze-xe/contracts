@@ -145,6 +145,14 @@ const _deploy = async (
 		Contract.interface.format("json") as string
 	);
 
+	console.log(`verifying ${name} `);
+
+	await hre.run("verify:verify", {
+        address: contract.address,
+      constructorArguments:[],
+      });
+
+	
 	console.log(`${name} deployed to ${contract.address}`);
 
 	return contract;
