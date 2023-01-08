@@ -20,14 +20,12 @@ export async function deploy(logs = false) {
 	deployments.sources = {};
 
 	// Exchange
-	const exchange = await _deploy(
+	let exchange = await _deploy(
 		"Exchange",
 		[config.name, config.version, config.admin, config.pauser, config.upgrader],
 		deployments,
 		{upgradable: true}
 	);
-    
-	await exchange.setFees(inEth(config.makerFee), inEth(config.takerFee));
 
 	// ZEXE Token
 	const zexe = await _deploy("ZEXE", [], deployments);
@@ -110,11 +108,11 @@ export async function deploy(logs = false) {
 	/* -------------------------------------------------------------------------- */
 	await _deploy("Multicall2", [], deployments);
 
-	await exchange.transferOwnership(config.owner);
-	fs.writeFileSync(
-		process.cwd() + `/deployments/${hre.network.name}/deployments.json`,
-		JSON.stringify(deployments, null, 2)
-	);
+	// await exchange.transferOwnership(config.owner);
+	// fs.writeFileSync(
+	// 	process.cwd() + `/deployments/${hre.network.name}/deployments.json`,
+	// 	JSON.stringify(deployments, null, 2)
+	// );
 }
 
 const inEth = (amount: string | number) => {
