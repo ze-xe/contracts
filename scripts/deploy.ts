@@ -20,12 +20,24 @@ export async function deploy(logs = false) {
 	deployments.sources = {};
 
 	// Exchange
-	const exchange = await _deploy(
+	let exchange;
+	console.log( hre.network.name);
+	if ( hre.network.name != 'hardhat'){
+		exchange = await _deploy(
 		"Exchange",
 		[config.name, config.version, process.env.ADMIN_ADDRESS , process.env.PAUSER_ADDRESS, process.env.UPGRADEADMIN_ADDRESS],
 		deployments,
 		{upgradable: true}
 	);
+   }
+   else{
+	    exchange = await _deploy(
+		"Exchange",
+		[config.name, config.version,'0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'],
+		deployments,
+		{upgradable: true}
+	);
+   }
   await exchange.setFees(inEth(config.makerFee), inEth(config.takerFee));
 
 	// ZEXE Token
@@ -109,11 +121,11 @@ export async function deploy(logs = false) {
 	/* -------------------------------------------------------------------------- */
 	await _deploy("Multicall2", [], deployments);
 
-	await exchange.transferOwnership(config.owner);
-	fs.writeFileSync(
-		process.cwd() + `/deployments/${hre.network.name}/deployments.json`,
-		JSON.stringify(deployments, null, 2)
-	);
+	// await exchange.transferOwnership(config.owner);
+	// fs.writeFileSync(
+	// 	process.cwd() + `/deployments/${hre.network.name}/deployments.json`,
+	// 	JSON.stringify(deployments, null, 2)
+	// );
 }
 
 const inEth = (amount: string | number) => {
@@ -144,14 +156,15 @@ const _deploy = async (
 	deployments.sources[contractName] = JSON.parse(
 		Contract.interface.format("json") as string
 	);
-
+ 
+	if ( hre.network.name != 'hardhat'){
 	console.log(`verifying ${name} `);
 
 	await hre.run("verify:verify", {
         address: contract.address,
       constructorArguments:[],
       });
-
+	}
 	
 	console.log(`${name} deployed to ${contract.address}`);
 
