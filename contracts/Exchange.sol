@@ -14,49 +14,21 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerUpgradeable.sol";
-// import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-
-contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+contract Exchange is BaseExchange, EIP712Upgradeable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using MathUpgradeable for uint256;
     using SafeMathUpgradeable for uint256;
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-
+    
     /**
      * @dev Initialize the contract
      * @param __name Name of the contract
      * @param __version Version of the contract
      */
-    function initialize(string memory __name, string memory __version, address _admin, address _pauser, address _upgradeAdmin) public initializer {
-        __Pausable_init();
-        __AccessControl_init();
+    function initialize(string memory __name, string memory __version) public initializer {
+        __Ownable_init();
         __EIP712_init(__name, __version);
-
-        _grantRole(ADMIN_ROLE, _admin);
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(PAUSER_ROLE, _pauser);
-        _grantRole(UPGRADER_ROLE, _upgradeAdmin);
-    }
-
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        onlyRole(UPGRADER_ROLE)
-        override
-    {}
-
-    function pause() public onlyRole(PAUSER_ROLE) {
-        _pause();
-    }
-
-    function unpause() public onlyRole(PAUSER_ROLE) {
-        _unpause();
     }
 
     /* -------------------------------------------------------------------------- */
@@ -95,12 +67,9 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
             buyer = msg.sender;
         }
 
-        // IERC20Upgradeable(order.token0).transferFrom(seller, buyer, amountToFill);
-        // IERC20Upgradeable(order.token1).transferFrom(buyer, seller, amountToFill.mul(uint256(order.exchangeRate)).div(10**18));
-      
         // calulate token1 amount based on fillamount and exchange rate
-      
-        exchangeInternal(order, msg.sender, amountToFill);
+        IERC20Upgradeable(order.token0).transferFrom(seller, buyer, amountToFill);
+        IERC20Upgradeable(order.token1).transferFrom(buyer, seller, amountToFill.mul(uint256(order.exchangeRate)).div(10**18));
 
         orderFills[orderId] = alreadyFilledAmount.add(amountToFill);
         emit OrderExecuted(orderId, msg.sender, amountToFill);
@@ -123,12 +92,8 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
             uint amount = 0;
             if(orders[i].orderType == OrderType.BUY || orders[i].orderType == OrderType.SELL) {
                 amount = _executeLimitOrder(signatures[i], orders[i], token0AmountToFill);
-            } 
-            else if(orders[i].orderType == OrderType.LONG || orders[i].orderType == OrderType.SHORT)  {
+            } else {
                 amount = _executeT0LeverageOrder(signatures[i], orders[i], token0AmountToFill);
-            }
-            else {
-               revert("Order type not supported");
             }
             token0AmountToFill -= amount;
             if (token0AmountToFill == 0) {
@@ -154,12 +119,8 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
             uint amount = 0;
             if(orders[i].orderType == OrderType.BUY || orders[i].orderType == OrderType.SELL) {
                 amount = _executeLimitOrder(signatures[i], orders[i], token0AmountToFill);
-            }  
-            else if(orders[i].orderType == OrderType.LONG || orders[i].orderType == OrderType.SHORT) {
+            } else {
                 amount = _executeT0LeverageOrder(signatures[i], orders[i], token0AmountToFill);
-            }
-            else {
-               revert("Order type not supported");
             }
             token0AmountToFill -= amount;
             token1AmountToFill = token0AmountToFill.mul(orders[i].exchangeRate).div(1e18);
@@ -278,53 +239,6 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
     }
 
     /**
-     * @notice Executed leverage order with limit orders
-     */
-    function executeLeverageWithLimitOrders(
-        bytes[] memory limitOrderSignatures,
-        Order[] memory limitOrders,
-        bytes memory signature,
-        Order memory order
-    ) external {
-        // TODO
-        // require(limitOrderSignatures.length == limitOrders.length, "Invalid limit order signatures");
-        // require(limitOrders.length > 0, "No limit orders");
-        // bytes32 orderId = verifyOrderHash(signature, order);
-        // require(validateOrder(order), "Invalid order");
-
-        // uint limitOrderExecIndex = 0;
-        // uint limitOrdersLength = limitOrders.length;
-
-        // for(uint i = loops[orderId]; i < order.loops; i++){
-        //     uint thisLoopLimitFill = scaledByBorrowLimit(order.amount, order.borrowLimit, i+1);
-        //     uint thisLoopFill = loopFills[orderId];
-        //     if(thisLoopFill == 0){
-        //         leverageInternal(assetToMarket[order.token0], assetToMarket[order.token1], thisLoopLimitFill, order);
-        //     }
-            
-        //     uint amountToFillInThisLoop = thisLoopLimitFill - thisLoopFill;
-
-        //     // Tokens to transfer in this loop
-        //     for(uint j = limitOrderExecIndex; j < limitOrdersLength; j++){
-                
-        //     }
-        //     uint amount = _executeLimitOrder(limitOrderSignatures, limitOrders, amountToFillInThisLoop);
-        //     loopFills[orderId] += amount;
-        //     amountToFillInThisLoop = amountToFillInThisLoop.sub(amount);
-
-        //     if(thisLoopFill + amountToFillInThisLoop == thisLoopLimitFill){
-        //         loops[orderId] += 1;
-        //         loopFills[orderId] = 0;
-        //     }
-
-        //     // If no/min fill amount left
-        //     if(amountToFillInThisLoop <= minTokenAmount[order.token0]){
-        //         break;
-        //     }
-        // }
-    }
-
-    /**
      * @dev Cancel an order
      * @param signature Signature of the order
      * @param order Order struct
@@ -343,7 +257,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
         if(order.orderType == OrderType.BUY || order.orderType == OrderType.SELL){
             orderFills[orderId] = order.amount;
         } else if(order.orderType == OrderType.LONG || order.orderType == OrderType.SHORT) {
-            loopFills[orderId] = order.amount;
+            loopFills[orderId] = order.loops;
             loops[orderId] = order.loops;
         } else {
             revert("Order type not supported");
@@ -407,7 +321,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
      * @param token Token to enable
      * @param cToken cToken of the token
      */
-    function enableMarginTrading(address token, address cToken) external onlyRole(ADMIN_ROLE) {
+    function enableMarginTrading(address token, address cToken) external onlyOwner {
         assetToMarket[token] = LendingMarket(cToken);
         require(LendingMarket(cToken).underlying() == token, "Invalid cToken");
         emit MarginEnabled(token, cToken);
@@ -418,7 +332,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
      * @param token Token to set
      * @param amount Minimum amount of token
      */
-    function setMinTokenAmount(address token, uint256 amount) external onlyRole(ADMIN_ROLE) {
+    function setMinTokenAmount(address token, uint amount) external onlyOwner {
         minTokenAmount[token] = amount;
         emit MinTokenAmountSet(token, amount);
     }
@@ -428,15 +342,11 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
      * @param _makerFee Maker fee
      * @param _takerFee Taker fee
      */
-    function setFees(uint256 _makerFee, uint256 _takerFee) external onlyRole(ADMIN_ROLE)  {
+    function setFees(uint _makerFee, uint _takerFee) external onlyOwner {
         makerFee = _makerFee;
         takerFee = _takerFee;
         emit FeesSet(_makerFee, _takerFee);
     }
-
-     function withdrawFunds(address _tokenAddress) external onlyRole(ADMIN_ROLE)  {
-         IERC20Upgradeable(_tokenAddress).transfer(msg.sender, IERC20Upgradeable(_tokenAddress).balanceOf(address(this)));
-       }
 
     /* -------------------------------------------------------------------------- */
     /*                               View Functions                               */

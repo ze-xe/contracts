@@ -64,7 +64,7 @@ abstract contract BaseExchange {
         Order memory order,
         address taker,
         uint token0amount
-     ) internal {
+    ) internal {
         // set buyer and seller as if order is BUY
         address buyer = order.maker;
         address seller = taker;
@@ -75,24 +75,9 @@ abstract contract BaseExchange {
             buyer = taker;
         }
 
-        // CASE : 1 BTC -> 10000 USDC
-        // maker: 0.9 BTC // 10% maker fee
-        // taket: 8000 USDC // 20% taker fee
-        uint256 calculatedMakerFee = token0amount.mul(makerFee).div(10**18); // 0.1 BTC
-        uint256 exchangeT0Amount = token0amount.sub(calculatedMakerFee); // 0.9 BTC
-
-        uint256 token1Amount = token0amount.mul(uint256(order.exchangeRate)).div(10**18); // 10000 USDC
-        uint256 calculatedTakerFee = token1Amount.mul(takerFee).div(1e18);  // 2000 USDC
-        uint256 exchangeT1Amount = token1Amount.sub(calculatedTakerFee); // 8000 USDC
-
-        IERC20Upgradeable(order.token0).transferFrom(seller, buyer, exchangeT0Amount);
-        IERC20Upgradeable(order.token0).transferFrom(seller, address(this), calculatedMakerFee);
-        IERC20Upgradeable(order.token1).transferFrom(buyer, seller, exchangeT1Amount);
-        IERC20Upgradeable(order.token1).transferFrom(buyer, address(this), calculatedTakerFee);
-
         // actual transfer
-        // IERC20Upgradeable(order.token0).transferFrom(seller, buyer, token0amount);
-        // IERC20Upgradeable(order.token1).transferFrom(buyer, seller, token0amount.mul(order.exchangeRate).div(10**18));
+        IERC20Upgradeable(order.token0).transferFrom(seller, buyer, token0amount);
+        IERC20Upgradeable(order.token1).transferFrom(buyer, seller, token0amount.mul(order.exchangeRate).div(10**18));
     }
 
     function leverageInternal(
@@ -100,7 +85,7 @@ abstract contract BaseExchange {
         LendingMarket ctoken1,
         uint amount0,
         Order memory order
-     ) internal {
+    ) internal {
         // token 0: supply token0 -> borrow token1 -> swap token1 to token0 -> repeat
         // SHORT token 0: supply token1 -> borrow token0 -> swap token0 to token1 -> repeat
         LendingMarket supplyToken = ctoken0;
