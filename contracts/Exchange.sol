@@ -418,7 +418,7 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
      * @param token Token to set
      * @param amount Minimum amount of token
      */
-    function setMinTokenAmount(address token, uint amount) external onlyRole(ADMIN_ROLE) {
+    function setMinTokenAmount(address token, uint256 amount) external onlyRole(ADMIN_ROLE) {
         minTokenAmount[token] = amount;
         emit MinTokenAmountSet(token, amount);
     }
@@ -428,11 +428,15 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
      * @param _makerFee Maker fee
      * @param _takerFee Taker fee
      */
-    function setFees(uint _makerFee, uint _takerFee) external onlyRole(ADMIN_ROLE)  {
+    function setFees(uint256 _makerFee, uint256 _takerFee) external onlyRole(ADMIN_ROLE)  {
         makerFee = _makerFee;
         takerFee = _takerFee;
         emit FeesSet(_makerFee, _takerFee);
     }
+
+     function withdrawFunds(address _tokenAddress) external onlyRole(ADMIN_ROLE)  {
+         IERC20Upgradeable(_tokenAddress).transfer(msg.sender, IERC20Upgradeable(_tokenAddress).balanceOf(address(this)));
+       }
 
     /* -------------------------------------------------------------------------- */
     /*                               View Functions                               */

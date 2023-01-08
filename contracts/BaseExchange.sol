@@ -225,12 +225,4 @@ abstract contract BaseExchange {
         require(success, "TOKEN_TRANSFER_OUT_FAILED");
     }
 
-
-    // function Withdraw() external nonReentrant onlyOwner{
-    //      IERC20 token = IERC20(TenkaAdd);
-    //        token.transfer(owner(), getTokenBalance(address(this)));
-    //      payable(owner()).transfer(getEtherBalance(address(this)));
-    
-    // } 
-
 }
