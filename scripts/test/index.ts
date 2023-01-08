@@ -8,13 +8,7 @@ export async function deploy() {
   /*                                  Exchange                                  */
   /* -------------------------------------------------------------------------- */
   const Exchange = await ethers.getContractFactory("Exchange");
-  let exchange;
-  if (hre.network.name == 'hardhat'){
-     exchange = await upgrades.deployProxy(Exchange, ['zexe', '1', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',  '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC']); 
-   }
-  else{
-     exchange = await upgrades.deployProxy(Exchange, ['zexe', '1', process.env.ADMIN_ADDRESS,  process.env.PAUSER_ADDRESS,  process.env.UPGRADEADMIN_ADDRESS]); 
-  }
+  const exchange = await upgrades.deployProxy(Exchange, ['zexe', '1']); 
   await exchange.deployed();
   
   /* -------------------------------------------------------------------------- */
