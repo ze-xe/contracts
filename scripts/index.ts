@@ -10,7 +10,7 @@ async function main() {
 			"utf8"
 		)
 	);
-  config.version = config.version.split('.')[0]+'.'+ config.version.split('.')[1]+'.'+(parseInt(config.version.split('.')[2])+1);
+  config.version = config.version.split('.')[0]+'.'+ (parseInt(config.version.split('.')[1])+1) +'.0';
   fs.writeFileSync(
     process.cwd() + `/deployments/${hre.network.name}/config.json`,
     JSON.stringify(config, null, 2)
