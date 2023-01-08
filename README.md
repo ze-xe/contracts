@@ -1,6 +1,14 @@
 # ZEXE Contracts
 
-Version 0.0.1
+## Specification
+
+### Versioning a.b.c
+
+- a: release number
+- b: deployment number
+- c: upgrade number
+
+## How to use
 
 ### Compile
 
@@ -13,3 +21,4 @@ Version 0.0.1
 ### Deploy
 
 `npx hardhat run scripts`
+

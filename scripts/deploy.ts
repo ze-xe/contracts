@@ -20,25 +20,12 @@ export async function deploy(logs = false) {
 	deployments.sources = {};
 
 	// Exchange
-	let exchange;
-	console.log( hre.network.name);
-	if ( hre.network.name != 'hardhat'){
-		exchange = await _deploy(
+	let exchange = await _deploy(
 		"Exchange",
-		[config.name, config.version, process.env.ADMIN_ADDRESS , process.env.PAUSER_ADDRESS, process.env.UPGRADEADMIN_ADDRESS],
+		[config.name, config.version, config.admin, config.pauser, config.upgrader],
 		deployments,
 		{upgradable: true}
 	);
-   }
-   else{
-	    exchange = await _deploy(
-		"Exchange",
-		[config.name, config.version,'0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'],
-		deployments,
-		{upgradable: true}
-	);
-   }
-  await exchange.setFees(inEth(config.makerFee), inEth(config.takerFee));
 
 	// ZEXE Token
 	const zexe = await _deploy("ZEXE", [], deployments);
@@ -141,7 +128,7 @@ const _deploy = async (
 ) => {
 	const Contract = await ethers.getContractFactory(contractName);
 	let contract;
-	if (upgradable) { 
+	if (upgradable) {
 		contract = await upgrades.deployProxy(Contract, args, {type: 'uups'});
 	} else {
 		contract = await Contract.deploy(...args);
@@ -156,16 +143,7 @@ const _deploy = async (
 	deployments.sources[contractName] = JSON.parse(
 		Contract.interface.format("json") as string
 	);
- 
-	if ( hre.network.name != 'hardhat'){
-	console.log(`verifying ${name} `);
 
-	await hre.run("verify:verify", {
-        address: contract.address,
-      constructorArguments:[],
-      });
-	}
-	
 	console.log(`${name} deployed to ${contract.address}`);
 
 	return contract;

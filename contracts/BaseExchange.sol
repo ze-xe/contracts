@@ -2,10 +2,12 @@
 pragma solidity 0.8.17;
 
 import "./lending/LendingMarket.sol";
+import "./ExchangeStorage.sol";
+
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-abstract contract BaseExchange {
+abstract contract BaseExchange is ExchangeStorage {
     using SafeMathUpgradeable for uint256;
 
     /* -------------------------------------------------------------------------- */
@@ -22,7 +24,7 @@ abstract contract BaseExchange {
     event FeesSet(uint makerFee, uint takerFee);
 
     /* -------------------------------------------------------------------------- */
-    /*                                 Structures                                 */
+    /*                                 Data types                                 */
     /* -------------------------------------------------------------------------- */
     enum OrderType {
         BUY,
@@ -42,20 +44,7 @@ abstract contract BaseExchange {
         uint32 borrowLimit;
         uint8 loops;
     }
-
-    /* -------------------------------------------------------------------------- */
-    /*                                   Storage                                  */
-    /* -------------------------------------------------------------------------- */
-    mapping(address => uint) public minTokenAmount;
-
-    mapping(bytes32 => uint) public orderFills;
-    mapping(bytes32 => uint) public loopFills;
-    mapping(bytes32 => uint) public loops;
-
-    mapping(address => LendingMarket) public assetToMarket;
-
-    uint public makerFee;
-    uint public takerFee;
+    
 
     /* -------------------------------------------------------------------------- */
     /*                             Internal Functions                             */

@@ -1,5 +1,6 @@
 {
-  "name": "hardhat-project",
+  "name": "synthex-contracts",
+  "version": "0.0.1",
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
