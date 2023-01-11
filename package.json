@@ -3,10 +3,10 @@
   "version": "0.0.1",
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test",
+    "test": "hardhat test --network hardhat",
     "console": "hardhat console",
     "node": "hardhat node",
-    "deploy": "hardhat run scripts"
+    "deploy": "hardhat run scripts --network hardhat"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
