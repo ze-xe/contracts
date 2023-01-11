@@ -3,20 +3,17 @@ const { upgrades } = require("hardhat");
 import fs from "fs";
 
 export async function deploy(deployments: any, config: any) {
-
 	deployments.contracts = {};
 	deployments.sources = {};
 
 	// Exchange
-	const exchange = await _deploy(
+	let exchange = await _deploy(
 		"Exchange",
 		[config.name, config.version, config.admin, config.pauser, config.upgrader],
 		deployments,
 		{upgradable: true},
 		config
 	);
-    
-	await exchange.setFees(inEth(config.makerFee), inEth(config.takerFee));
 
 	// ZEXE Token
 	const zexe = await _deploy("ZEXE", [], deployments);
@@ -98,11 +95,6 @@ export async function deploy(deployments: any, config: any) {
 	/*                                    Utils                                   */
 	/* -------------------------------------------------------------------------- */
 	await _deploy("Multicall2", [], deployments);
-
-	fs.writeFileSync(
-		process.cwd() + `/deployments/${hre.network.name}/deployments.json`,
-		JSON.stringify(deployments, null, 2)
-	);
 }
 
 const inEth = (amount: string | number) => {
