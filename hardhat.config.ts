@@ -6,6 +6,8 @@ import '@openzeppelin/hardhat-upgrades';
 
 require("dotenv").config();
 
+const PRIVATE_KEY = process.env.PRIVATE_KEY ?? 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.17",
@@ -26,15 +28,15 @@ const config: HardhatUserConfig = {
   networks: {
     goerli: {
       url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-      accounts: [`0x${process.env.PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
     },
     harmonyTestnet: {
       url: `https://api.s0.b.hmny.io/`,
-      accounts: [`0x${process.env.PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
     },
     arbitrumGoerli: {
       url: 'https://goerli-rollup.arbitrum.io/rpc', // `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-      accounts: [`0x${process.env.PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`],
       gasPrice: 1600000000
     }
   },
