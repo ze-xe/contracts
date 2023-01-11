@@ -1,11 +1,12 @@
 {
   "name": "zexe",
-  "version": "0.4.0",
+  "version": "0.5.0",
+  "latest": "0.5.2",
   "makerFee": "0.001",
   "takerFee": "0.001",
-  "admin": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7",
-  "pauser": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7",
-  "upgrader": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7",
+  "admin": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+  "pauser": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+  "upgrader": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
   "tokens": [
     {
       "name": "Bitcoin",

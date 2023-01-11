@@ -2,19 +2,7 @@ import hre, { ethers } from "hardhat";
 const { upgrades } = require("hardhat");
 import fs from "fs";
 
-export async function deploy(logs = false) {
-	const deployments = JSON.parse(
-		fs.readFileSync(
-			process.cwd() + `/deployments/${hre.network.name}/deployments.json`,
-			"utf8"
-		)
-	);
-	const config = JSON.parse(
-		fs.readFileSync(
-			process.cwd() + `/deployments/${hre.network.name}/config.json`,
-			"utf8"
-		)
-	);
+export async function deploy(deployments: any, config: any) {
 
 	deployments.contracts = {};
 	deployments.sources = {};
@@ -24,7 +12,8 @@ export async function deploy(logs = false) {
 		"Exchange",
 		[config.name, config.version, config.admin, config.pauser, config.upgrader],
 		deployments,
-		{upgradable: true}
+		{upgradable: true},
+		config
 	);
     
 	await exchange.setFees(inEth(config.makerFee), inEth(config.takerFee));
@@ -110,7 +99,6 @@ export async function deploy(logs = false) {
 	/* -------------------------------------------------------------------------- */
 	await _deploy("Multicall2", [], deployments);
 
-	await exchange.transferOwnership(config.owner);
 	fs.writeFileSync(
 		process.cwd() + `/deployments/${hre.network.name}/deployments.json`,
 		JSON.stringify(deployments, null, 2)
@@ -126,7 +114,8 @@ const _deploy = async (
 	contractName: string,
 	args: any[],
 	deployments: any,
-	{upgradable = false, name = contractName} = {}
+	{upgradable = false, name = contractName} = {},
+	config: any = {},
 ) => {
 	const Contract = await ethers.getContractFactory(contractName);
 	let contract;
@@ -145,6 +134,19 @@ const _deploy = async (
 	deployments.sources[contractName] = JSON.parse(
 		Contract.interface.format("json") as string
 	);
+
+	if (upgradable) {
+		const implementationAddress = await upgrades.erc1967.getImplementationAddress(contract.address);
+		if(!deployments.contracts[name].implementations) deployments.contracts[name].implementations = {};
+		deployments.contracts[name].implementations[config.latest] = {
+			address: implementationAddress,
+			source: name+'_'+config.latest,
+			constructorArguments: [],
+			version: config.latest,
+			block: (await ethers.provider.getBlockNumber()).toString()
+		};
+		deployments.sources[name+'_'+config.latest] = contract.interface.format('json');
+	}
 
 	console.log(`${name} deployed to ${contract.address}`);
 
