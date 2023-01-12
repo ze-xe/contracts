@@ -1,19 +1,22 @@
 import hre, { ethers } from "hardhat";
 const { upgrades } = require("hardhat");
-import fs from "fs";
 
 export async function deploy(deployments: any, config: any) {
 	deployments.contracts = {};
 	deployments.sources = {};
 
+	const [deployer] = await ethers.getSigners();
+
 	// Exchange
 	let exchange = await _deploy(
 		"Exchange",
-		[config.name, config.version, config.admin, config.pauser, config.upgrader],
+		[config.name, config.version, config.admin, config.pauser],
 		deployments,
 		{upgradable: true},
 		config
 	);
+
+	console.log(`Deployed zexe ${config.version} to ${exchange.address} 🎉`);
 
 	// ZEXE Token
 	const zexe = await _deploy("ZEXE", [], deployments);
@@ -29,6 +32,7 @@ export async function deploy(deployments: any, config: any) {
 	// for additional incentives
 	await zexe.mint(lever.address, ethers.utils.parseEther("10000000000000"));
 
+	console.log(`Initiating tokens... 💬`)
 	for (let i in config.tokens) {
 		const tokenConfig = config.tokens[i];
 		// Initialize Interest Rate Model
@@ -42,7 +46,7 @@ export async function deploy(deployments: any, config: any) {
 				tokenConfig.interestRateModel.owner,
 			],
 			deployments, 
-      {name: "l" + tokenConfig.symbol + "_IRM"}
+			{name: "l" + tokenConfig.symbol + "_IRM"}
 		);
 		// Initialize token
 		let token;
@@ -55,20 +59,20 @@ export async function deploy(deployments: any, config: any) {
 			}
 		}
 		// Initialize market
-    const market = await _deploy(
-      "LendingMarket",
-      [
-        token.address,
-        lever.address,
-        irm.address,
-        inEth("2"),
-        `Lever ${tokenConfig.name}`,
-        `l${tokenConfig.symbol}`,
-        18,
-      ],
-      deployments,
-      {upgradable: true, name: "l" + tokenConfig.symbol + "_Market"}
-    );
+		const market = await _deploy(
+			"LendingMarket",
+			[
+				token.address,
+				lever.address,
+				irm.address,
+				inEth("2"),
+				`Lever ${tokenConfig.name}`,
+				`l${tokenConfig.symbol}`,
+				18,
+			],
+			deployments,
+			{upgradable: true, name: "l" + tokenConfig.symbol + "_Market"}
+		);
 		await oracle.setUnderlyingPrice(
 			market.address,
 			inEth(tokenConfig.price)
@@ -89,12 +93,22 @@ export async function deploy(deployments: any, config: any) {
 			[inEth(tokenConfig.supplySpeed)],
 			[inEth(tokenConfig.borrowSpeed)]
 		);
+
+		console.log(`\t✅ ${config.tokens[i].symbol}`)
 	}
 
 	/* -------------------------------------------------------------------------- */
 	/*                                    Utils                                   */
 	/* -------------------------------------------------------------------------- */
 	await _deploy("Multicall2", [], deployments);
+
+
+	/* -------------------------------------------------------------------------- */
+	await exchange.renounceRole(await exchange.ADMIN_ROLE(), deployer.address);
+
+	console.log(`Deployment complete 🎉`)
+
+	return {exchange, lever};
 }
 
 const inEth = (amount: string | number) => {
@@ -113,6 +127,7 @@ const _deploy = async (
 	let contract;
 	if (upgradable) {
 		contract = await upgrades.deployProxy(Contract, args, {type: 'uups'});
+		args = [];
 	} else {
 		contract = await Contract.deploy(...args);
 	}
@@ -122,6 +137,7 @@ const _deploy = async (
 		address: contract.address,
 		abi: contractName,
 		constructorArguments: args,
+		block: (await ethers.provider.getBlockNumber()).toString(),
 	};
 	deployments.sources[contractName] = JSON.parse(
 		Contract.interface.format("json") as string
@@ -137,10 +153,9 @@ const _deploy = async (
 			version: config.latest,
 			block: (await ethers.provider.getBlockNumber()).toString()
 		};
+		deployments.contracts[name].latest = implementationAddress;
 		deployments.sources[name+'_'+config.latest] = contract.interface.format('json');
 	}
-
-	console.log(`${name} deployed to ${contract.address}`);
 
 	return contract;
 };

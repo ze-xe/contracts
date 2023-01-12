@@ -1,10 +1,11 @@
 {
   "name": "zexe",
-  "version": "0.0.11",
-  "latest": "0.0.11",
+  "version": "0.2.0",
+  "latest": "0.2.1",
   "makerFee": "0.001",
   "takerFee": "0.001",
-  "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7",
+  "admin": "0xA6559BAB563C490F81c18230fd927fdca163951E",
+  "pauser": "0xEf9ec8b0eAf86150278707b77a066140615b0904",
   "tokens": [
     {
       "name": "Bitcoin",
@@ -16,7 +17,7 @@
         "multiplier": "0.25",
         "jumpMultiplierPerBlock": "0.05",
         "kink": "0.80",
-        "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7"
+        "owner": "0x780580fd8AEa47b93414Fa6693123049EC7aED55"
       },
       "price": "16720.22",
       "collateralFactor": "0.9",
@@ -34,7 +35,7 @@
         "multiplier": "0.25",
         "jumpMultiplierPerBlock": "0.05",
         "kink": "0.80",
-        "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7"
+        "owner": "0x780580fd8AEa47b93414Fa6693123049EC7aED55"
       },
       "price": "1211.9",
       "collateralFactor": "0.9",
@@ -52,7 +53,7 @@
         "multiplier": "0.25",
         "jumpMultiplierPerBlock": "0.05",
         "kink": "0.80",
-        "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7"
+        "owner": "0x780580fd8AEa47b93414Fa6693123049EC7aED55"
       },
       "price": "1.0",
       "collateralFactor": "0.95",
@@ -70,7 +71,7 @@
         "multiplier": "0.25",
         "jumpMultiplierPerBlock": "0.05",
         "kink": "0.80",
-        "owner": "0x0eD6a1F7a99E8Bc1c752E4515f7AB3aFe20BdBF7"
+        "owner": "0x780580fd8AEa47b93414Fa6693123049EC7aED55"
       },
       "price": "3.2",
       "collateralFactor": "0.85",

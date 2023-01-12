@@ -3,6 +3,8 @@ import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-gas-reporter"
 import "@nomiclabs/hardhat-etherscan";
 import '@openzeppelin/hardhat-upgrades';
+import "hardhat-openzeppelin-defender";
+import "@openzeppelin/hardhat-defender"
 
 require("dotenv").config();
 
@@ -26,18 +28,10 @@ const config: HardhatUserConfig = {
     coinmarketcap: '54e57674-6e99-404b-8528-cbf6a9f1e471'
   },
   networks: {
-    goerli: {
-      url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-      accounts: [`0x${PRIVATE_KEY}`],
-    },
-    harmonyTestnet: {
-      url: `https://api.s0.b.hmny.io/`,
-      accounts: [`0x${PRIVATE_KEY}`],
-    },
     arbitrumGoerli: {
-      url: 'https://goerli-rollup.arbitrum.io/rpc', // `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      url: 'https://nd-389-970-162.p2pify.com/17b0fbe8312c9ff963057d537b9c7864', // 'https://goerli-rollup.arbitrum.io/rpc', // `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [`0x${PRIVATE_KEY}`],
-      gasPrice: 1600000000
+      chainId: 421613,
     }
   },
   etherscan: {
@@ -45,7 +39,15 @@ const config: HardhatUserConfig = {
       harmonyTest: process.env.ETHERSCAN_API_KEY!,
       arbitrumGoerli: process.env.ARBISCAN_API_KEY!,
     }
-  }
+  },
+  defender: {
+    apiKey: process.env.DEFENDER_TEAM_API_KEY!,
+    apiSecret: process.env.DEFENDER_TEAM_API_SECRET_KEY!,
+  },
+  OpenzeppelinDefenderCredential: {
+    apiKey: process.env.DEFENDER_TEAM_API_KEY!,
+    apiSecret: process.env.DEFENDER_TEAM_API_SECRET_KEY!,
+  },
 };
 
 export default config;

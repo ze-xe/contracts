@@ -1,4 +1,4 @@
-import hre, { ethers, upgrades } from "hardhat";
+import hre, { defender, ethers, upgrades } from "hardhat";
 import fs from "fs";
 
 async function upgrade() {
@@ -24,19 +24,18 @@ async function upgrade() {
 	
 
 	const Exchange = await ethers.getContractFactory("Exchange");
-	const exchange = await Exchange.deploy();
-    await exchange.deployed();
-
-    console.log("Created new implementation\nReady to upgrade::", exchange.address);
+	const proposal = await defender.proposeUpgrade(deployments.contracts['Exchange'].address, Exchange, {title: `Upgrade to ${config.latest}`, multisig: config.admin});
+	console.log("Upgrade proposal created at:", proposal.url);
     
     deployments.contracts['Exchange'].implementations[config.latest] = {
-        address: exchange.address,
+        address: proposal.metadata!.newImplementationAddress,
         source: 'Exchange_'+config.latest,
         constructorArguments: [],
         version: config.latest,
 		block: (await ethers.provider.getBlockNumber()).toString()
     };
-    deployments.sources['Exchange_'+config.latest] = exchange.interface.format('json');
+    deployments.contracts['Exchange'].latest = config.latest;
+    deployments.sources['Exchange_'+config.latest] = Exchange.interface.format('json');
 
 	fs.writeFileSync(
 		process.cwd() + `/deployments/${hre.network.name}/deployments.json`,

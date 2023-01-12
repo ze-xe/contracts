@@ -1,6 +1,6 @@
 import { deploy } from "./deploy";
 import fs from 'fs';
-import hre from 'hardhat';
+import hre, { OpenzeppelinDefender } from 'hardhat';
 
 async function main() {
   // read deployments and config
@@ -17,7 +17,36 @@ async function main() {
   config.version = version;
   config.latest = version;
   
-  await deploy(deployments, config);
+  const {exchange, lever} = await deploy(deployments, config);
+
+  if (hre.network.name !== "hardhat") {
+		// Add contract to openzeppelin defender
+		console.log("Adding contract to openzeppelin defender... 💬");
+		// get the abi in json string using the contract interface
+		const AbiJsonString = OpenzeppelinDefender.Utils.AbiJsonString(
+			exchange.interface
+		);
+
+		//Obtaining the name of the network through the chainId of the network
+		const networkName = OpenzeppelinDefender.Utils.fromChainId(
+			Number(hre.network.config.chainId!)
+		);
+
+		//add the contract to the admin
+		const option = {
+			network: networkName!,
+			address: exchange.address,
+			name: `Exchange ${config.version.split(".")[0]}.${
+				config.version.split(".")[1]
+			}.x`,
+			abi: AbiJsonString as string,
+		};
+
+		await OpenzeppelinDefender.AdminClient.addContract(option);
+		console.log(
+			`Exchange ${config.version} added to openzeppelin defender! 🎉`
+		);
+	}
   
   // save deployments
 	fs.writeFileSync(process.cwd() + `/deployments/${hre.network.name}/config.json`, JSON.stringify(config, null, 2));

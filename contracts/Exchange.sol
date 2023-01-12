@@ -26,7 +26,6 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
     using MathUpgradeable for uint256;
     using SafeMathUpgradeable for uint256;
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     /**
@@ -34,21 +33,25 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
      * @param __name Name of the contract
      * @param __version Version of the contract
      */
-    function initialize(string memory __name, string memory __version, address _admin, address _pauser, address _upgradeAdmin) public initializer {
+    function initialize(string memory __name, string memory __version, address _admin, address _pauser) public initializer {
         __Pausable_init();
         __AccessControl_init();
         __EIP712_init(__name, __version);
         __UUPSUpgradeable_init();
 
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _setRoleAdmin(ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
         _grantRole(ADMIN_ROLE, _admin);
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(PAUSER_ROLE, DEFAULT_ADMIN_ROLE);
         _grantRole(PAUSER_ROLE, _pauser);
-        _grantRole(UPGRADER_ROLE, _upgradeAdmin);
+
+        // TEMP grant deployer role to initiate the contract
+        _grantRole(ADMIN_ROLE, msg.sender);
     }
 
     function _authorizeUpgrade(address newImplementation)
         internal
-        onlyRole(UPGRADER_ROLE)
+        onlyRole(ADMIN_ROLE)
         override
     {}
 
@@ -470,5 +473,9 @@ contract Exchange is BaseExchange, EIP712Upgradeable, AccessControlUpgradeable, 
         );
 
         return digest;
+    }
+
+    function dummy() public pure returns(uint){
+        return 112233;
     }
 }
